@@ -2,7 +2,7 @@
 import argparse,sys,os,shutil,subprocess,random,copy,numpy
 from myfunc import initstr,occupy,ce_energy
 
-parser=argparse.ArgumentParser(description='cluster expansion construction basing on given clusters and supercell. Configurations will be generated randomly to reach the target cv value. The default cv is 0, thus the construction process will never terminate. First-principles energies and band gaps from VASP can be expanded in this version',
+parser=argparse.ArgumentParser(description='cluster expansion construction basing on given clusters and supercell. Configurations will be generated randomly to reach the target cv value. The default cv is 0, thus the construction process will never terminate. First-principles energies from VASP can be expanded in this version',
 		formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('-c',default='clusters.out',dest='clusters',help="pre-defined clusters file")
 parser.add_argument('-l',default='str.in',dest='lattice',help="the lattice file")
@@ -44,19 +44,22 @@ def random_structure_generator(index,energy_list):
         os.mkdir(str(index))
 	shutil.copy('str.out',str(index))
 	os.chdir(str(index))
-	subprocess.check_call(["runstruct_vasp","-nr"])
+	subprocess.check_call("runstruct_vasp")
+        os.chdir('../')
+        '''
+        subprocess.check_call("gzip -d OUTCAR.static.gz")
 	subprocess.check_call("mpirun -np 8 vasp > vasp.out",shell=True)
-	if subprocess.call("grep required OUTCAR",shell=True) == 1:
+	if subprocess.call("grep required OUTCAR > /dev/null",shell=True) == 1:
 		os.mknod('error')
 		celog.write('Calulation is not converged in %s\n' % (index))
 		os.chdir('../')
 	else:
 		subprocess.call("grep without OUTCAR|tail -1|awk '{print $4}' > energy",shell=True)
-                subprocess.call("pv_gap.py OUTCAR|tail -1|awk '{print $3}' > bandgap",shell=True)
+                #subprocess.call("pv_gap.py OUTCAR|tail -1|awk '{print $3}' > bandgap",shell=True)
 		os.chdir('../')
+        '''
 
-celog=file('ce.log','a')
-celog.write(subprocess.check_output("date",shell=True))
+celog=file('ce.log','w')
 index=0
 #scan current directory to collect finished calculation
 for item in os.listdir(os.environ['PWD']):
@@ -67,9 +70,9 @@ for item in os.listdir(os.environ['PWD']):
 			index+=1
 			os.chdir('../')
 
-celog.write(str(index)+' structures have been calulated already in current directory.\n')
+celog.write(subprocess.check_output("date"))
+celog.write(str(index)+' structures have alreadt been calulated in current directory.\n')
 celog.flush()
-
 
 try:
         energy_list=list(numpy.loadtxt('allenergy.out'))
@@ -90,19 +93,27 @@ if ce_min>0:
                 random_structure_generator(index,energy_list)
                 cv=float(subprocess.check_output("clusterexpand -e -cv %s | tail -1" % (args.property),shell=True))
                 energy_list=numpy.loadtxt('allenergy.out').tolist()
+	        celog.write(subprocess.check_output("date"))
                 celog.write('Cycle %s CV: %s\n' % (index,cv))
                 celog.flush()
 
+#build cluster expansion until convengence
 while 1:
 	index+=1
 	random_structure_generator(index,energy_list)
 	cv=float(subprocess.check_output("clusterexpand -e -cv %s | tail -1" % (args.property),shell=True))
         energy_list=numpy.loadtxt('allenergy.out').tolist()
-	celog.write(subprocess.check_output("date",shell=True))
+	celog.write(subprocess.check_output("date"))
 	celog.write('Cycle %s CV: %s\n' % (index,cv))
 	celog.flush()
+        if os.path.isfile('stop'):
+                subprocess.call('checkrelax')
+                celog.close()
+                os.remove('stop')
+                break
 	if cv<=args.cv:
 		celog.write('Cluster expansion finished successfully')
 		celog.close()
+                subprocess.call('checkrelax')
 		break
 		

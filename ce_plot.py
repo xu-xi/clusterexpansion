@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 
 parser=argparse.ArgumentParser(description='plot results of cluster expansion for given property',
 		formatter_class=argparse.ArgumentDefaultsHelpFormatter) 
-parser.add_argument('-p',default='bandgap',dest='property',help="the property to plot")
+parser.add_argument('-p',default='energy',dest='property',help="the property to plot")
+parser.add_argument('-a',action='store_true',dest='average',help="decide whether the property to be averaged")
 args=parser.parse_args()
 
 lat_atom_number=len(file('lat.in').readlines())-6
@@ -18,8 +19,10 @@ for item in os.listdir(os.environ['PWD']):
                         datafile.write(str(os.path.basename(fullpath))+'\t')
                         sc_atom_number=len(file('str.out').readlines())-6
                         vasp_data=float(subprocess.check_output('cat %s' %(args.property),shell=True))
-                        #ce_energy=(sc_atom_number/lat_atom_number)*float(subprocess.check_output('corrdump -c -l=../lat.in -cf=../clusters.out -eci=../bandgap.eci',shell=True))
-                        ce_data=float(subprocess.check_output('corrdump -c -mi -l=../lat.in -cf=../clusters.out -eci=../%s.ecimult' %(args.property),shell=True))
+                        if args.average==True:
+                            ce_data=float(subprocess.check_output('corrdump -c -mi -l=../lat.in -cf=../clusters.out -eci=../%s.ecimult' %(args.property),shell=True))
+                        else:
+                            ce_data=(sc_atom_number/lat_atom_number)*float(subprocess.check_output('corrdump -c -l=../lat.in -cf=../clusters.out -eci=../%s.eci' %(args.property),shell=True))
                         datafile.write('%.5f\t%.5f\n' %(ce_data,vasp_data))
                         os.chdir('../')
 datafile.close()
@@ -29,8 +32,8 @@ index=list(data[:,0])
 ce_data=list(data[:,1])
 vasp_data=list(data[:,2])
 
-plt.xlabel('Fitted Bandgap/eV')
-plt.ylabel('Calculated Bandgap/eV')
+plt.xlabel('Fitted %s/eV' % (args.property))
+plt.ylabel('Calculated %s/eV' % (args.property))
 plt.scatter(ce_data,vasp_data,c='.25',s=50)
 
 a=max(max(ce_data),max(vasp_data))
@@ -45,7 +48,7 @@ plt.plot(x,x,linestyle='dashed',linewidth=.5,c='k')
 plt.savefig('%s-ce.png' %(args.property))
 plt.close()
 
-eci=list(numpy.loadtxt('%s.eci' %(args.property)))
+eci=list(numpy.loadtxt('%s.eci' %(args.property)))[2:]
 plt.xlabel('Index of clusters')
 #plt.ylabel(r'$J_{\alpha}m_{\alpha}$/eV')
 plt.ylabel('ECI/eV')

@@ -8,7 +8,6 @@ parser.add_argument('-f','--file',default='str.in',dest='latfile',help="the inpu
 parser.add_argument('-s','--supercell',default='supercell.in',dest='supercell_file',help="the input supercell file")
 args=parser.parse_args()
 
-
 isublattices,iatomlist,vsublattices,vatomlist,concentrations,n=initstr(args.latfile,args.supercell_file)
 strfile=file('str.out','r')
 lattinfo=[]
@@ -24,9 +23,6 @@ for vatomsites in itertools.product(*[enumer(x) for x in vatomlist]):
 	occupy(strfile,vsublattices,list(vatomsites))
 	strfile.close()
 	energy0=ce_energy('eci.out','str.out')
-	#print energy0
-	#str_corr=commands.getoutput('corrdump -c')
-	#print str_corr
 	step+=1
 	if energy0 in weights:
 		weights[energy0]+=1
@@ -35,10 +31,11 @@ for vatomsites in itertools.product(*[enumer(x) for x in vatomlist]):
 		index[energy0]=step
 		os.mkdir(str(step))
 		shutil.copy('str.out',str(step))
-print 'the number of unequal structures:',len(weights)
+
 datafile=file('data.out','w')
-datafile.write('#index energy weights\n')
-for i in weights:
-	datafile.write('%s %s %s\n' %(index[i],i,weights[i]))
+datafile.write('#index\tenergy\tweights\n')
+energy_list=sorted(weights)
+for i in energy_list:
+	datafile.write('%s\t%s\t%s\n' %(index[i],i,weights[i]))
 datafile.close()
 

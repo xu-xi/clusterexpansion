@@ -26,6 +26,7 @@ def Main(ArgList):
     parser.add_argument('-v',type=float,default=0.0,dest='cv',help="the objective cross validation value")
     parser.add_argument('-s',default='supercell.in',dest='supercell',help="the input supercell file")
     parser.add_argument('-p',default='energy',dest='property',help="the property to expand")
+    parser.add_argument('--version',action='version',version='2017.2.23',help="output the version of the program")
 
     args=parser.parse_args()
 
@@ -66,7 +67,6 @@ def Main(ArgList):
                 celog.close()
                 os.remove('stop')
                 break
-
 
     #build cluster expansion until convengence
     while 1:

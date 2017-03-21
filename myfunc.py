@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys,re,math,commands,itertools,shutil,os,random
+import sys,re,math,commands,itertools,shutil,os,random,subprocess
 from numpy import *
 from fractions import Fraction
 from compiler.ast import flatten
@@ -305,4 +305,13 @@ def skipchoice(alist,number):
         if j==len(selected):
             return selected
             break
+
+def read_clusters(order):
+    subprocess.check_call('getclus > clusters.tmp',shell=True)
+    clus_data=list(loadtxt('clusters.tmp')[:,0])
+    os.remove('clusters.tmp')
+    exclude_clus_num=0
+    for i in range(order):
+        exclude_clus_num+=clus_data.count(i)
+    return clus_data.count(order),exclude_clus_num
 

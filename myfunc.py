@@ -60,8 +60,8 @@ def initstr(lattice,superlattice):
 	try:
 		latfile=file(lattice,'r')
 		supercell=file(superlattice,'r')
-	except:
-		raise IOError
+	except IOError:
+                print 'ERROR: can not read lat.in or supercell.in';sys.exit(1)
 
 	strfile=file('str.out','w')
 	for i in range(3):

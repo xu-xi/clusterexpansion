@@ -12,7 +12,7 @@ def Main(Arglist):
     parser.add_argument('-t',type=str,dest='title',default='',help="The title of the plot")
     parser.add_argument('-T',type=int,dest='temp0',help="The initial temperature of the plot")
     parser.add_argument('--ft',type=str,dest='filetype',default='png',help="any filetype supported by Matplotlib")
-    #parser.add_argument('-n',type=int,dest='clus_number',default=None,help="The number of cluster to plot")
+    parser.add_argument('-n',type=int,dest='clus_number',help="The number of cluster to plot")
     args=parser.parse_args()
 
     #read data file
@@ -22,6 +22,9 @@ def Main(Arglist):
 
     #plot cluster correlation functions from MC simulations
     clus_include,clus_exclude=read_clusters(args.order)
+    if args.clus_number!=None and args.clus_number <= clus_include:
+        clus_include=args.clus_number
+
     noc=len(file('eci.out').readlines())-clus_exclude
 
     clus_corr_funcs=[]

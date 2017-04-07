@@ -2,7 +2,7 @@
 import sys,os,shutil,argparse,numpy,subprocess,itertools
 from myfunc import *
 
-parser=argparse.ArgumentParser(description='GENerate the best SQS according to enumeration methodi, a file named tcorr.out can be uesd to define objective correlation functions',
+parser=argparse.ArgumentParser(description='GENerate the best SQS according to enumeration method, a file named tcorr.out can be used to define objective correlation functions',
 		formatter_class=argparse.ArgumentDefaultsHelpFormatter) 
 parser.add_argument('-f','--file',default='str.in',dest='latfile',help="the input lattice file ")
 #parser.add_argument('-c','--corrfunc',default='corr_func.in',dest='corr_func_file',help="the input file defining correlation functions")

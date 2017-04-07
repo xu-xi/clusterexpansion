@@ -230,14 +230,14 @@ def touch(filename,value):
 	with open(filename) as afile:
 		afile.write('%s' %(value))
 
-def objective_correlation_functions(concentration,cluster):
+def objective_correlation_functions(concentration,cluster_order):
 	'generate the objective cluster correlation functions or read it from input file'
 	obj_corr=[]
-	for i in range(len(cluster)):
-		obj_corr.append((2*concentration[0][0]-1)**cluster[i])
-	if os.path.isfile('corr_func.in'):
+	for i in range(len(cluster_order)):
+		obj_corr.append((2*concentration[0][0]-1)**cluster_order[i])
+	if os.path.isfile('tcorr.out'):
 		read_corr=[]
-		for line in file('corr_func.in'):
+		for line in file('tcorr.out'):
 			read_corr.append(float(line.split()[0]))
 		for j in range(len(read_corr)):
 			obj_corr[j]=read_corr[j]
@@ -258,7 +258,7 @@ def Boltzmann_factor(energy,temperature):
 
 def calc_correlation_functions(weight,obj_corr,radius):
 	'calculate correlation functions'
-	failure,output=commands.getstatusoutput('corrdump -c -l=../lat.in -s=str.out')
+	failure,output=commands.getstatusoutput('corrdump -c -l=lat.in -s=str.out')
 	if failure:
                 print 'ERROR: running corrdump failed!'
                 print output;sys.exit(1)
@@ -314,4 +314,20 @@ def read_clusters(order):
     for i in range(order):
         exclude_clus_num+=clus_data.count(i)
     return clus_data.count(order),exclude_clus_num
+
+def bandgap_temp(temperature):
+    #read data file
+    try:
+        mcdata=loadtxt('mc.out')
+        eci=loadtxt('../bandgap.ecimult')
+    except IOError:
+        print 'ERROR: can not read mc.out or bandgap.ecimult.';sys.exit(1)
+
+    noc=len(file('bandgap.ecimult').readlines()) #number of clusters
+    mc_temps=list(mcdata[:,0]) #temperatures of MC simulation
+    clus_corr_funcs=mcdata[:,-noc:] #cluster correlation functions
+    bandgap=list(dot(clus_corr_funcs,eci))
+    return bandgap[mc_temps.index(temperature)]
+
+
 

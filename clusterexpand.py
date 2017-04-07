@@ -2,6 +2,21 @@
 import argparse,sys,os,shutil,subprocess,random,copy,numpy
 from myfunc import initstr,occupy,ce_energy
 
+def check_vasp_error(index):
+    'check if current calculation is converged or not'
+    if os.path.isfile('vasp.out.relax'):
+        if subprocess.check_call('grep required vasp.out.relax',shell=True)!=0:
+            os.mknod('error')
+            sys.stderr.write('ERROR in %s, check the output' % (index))
+    elif os.path.isfile('vasp.out.static'):
+        if subprocess.check_call('grep required vasp.out.static',shell=True)!=0:
+            os.mknod('error')
+            sys.stderr.write('ERROR in %s, check the output' % (index))
+    elif os.path.isfile('vasp.out'):
+        if subprocess.check_call('grep required vasp.out',shell=True)!=0:
+            os.mknod('error')
+            sys.stderr.write('ERROR in %s, check the output' % (index))
+
 def random_structure_generator(lattice,supercell,index,energy_list):
     'generate structures randomly and call VASP to calculate its energy'
     while 1:
@@ -16,6 +31,7 @@ def random_structure_generator(lattice,supercell,index,energy_list):
     shutil.copy('str.out',str(index))
     os.chdir(str(index))
     subprocess.check_call("runstruct_vasp")
+    check_vasp_error(index)
     os.chdir('../')
 
 def Main(ArgList):
@@ -26,7 +42,7 @@ def Main(ArgList):
     parser.add_argument('-v',type=float,default=0.0,dest='cv',help="the objective cross validation value")
     parser.add_argument('-s',default='supercell.in',dest='supercell',help="the input supercell file")
     parser.add_argument('-p',default='energy',dest='property',help="the property to expand")
-    parser.add_argument('--version',action='version',version='2017.2.23',help="output the version of the program")
+    #parser.adddd_argument('--version',action='version',version='2017.2.23',help="output the version of the program")
 
     args=parser.parse_args()
 

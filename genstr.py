@@ -33,9 +33,9 @@ for vatomsites in itertools.product(*[enumer(x) for x in vatomlist]):
 		shutil.copy('str.out',str(step))
 
 datafile=file('data.out','w')
-datafile.write('#index\tenergy\tweights\n')
+datafile.write('#index\tenergy_ce\tweights\n')
 energy_list=sorted(weights)
 for i in energy_list:
-	datafile.write('%s\t%s\t%s\n' %(index[i],i,weights[i]))
+	datafile.write('%u\t%.5f\t%u\n' %(index[i],i,weights[i]))
 datafile.close()
 

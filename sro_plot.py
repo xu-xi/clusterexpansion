@@ -10,7 +10,7 @@ def Main(Arglist):
     parser.add_argument('-x',type=float,required=True,dest='concentration',help="The concentration of component atom")
     parser.add_argument('-o',type=int,dest='order',default=2,help="The order of clusters to plot")
     parser.add_argument('-t',type=str,dest='title',default='',help="The title of the plot")
-    parser.add_argument('-T',type=int,dest='temp0',default=None,help="The initial temperature of the plot")
+    parser.add_argument('-T',type=int,dest='temp0',help="The initial temperature of the plot")
     parser.add_argument('--ft',type=str,dest='filetype',default='png',help="any filetype supported by Matplotlib")
     #parser.add_argument('-n',type=int,dest='clus_number',default=None,help="The number of cluster to plot")
     args=parser.parse_args()

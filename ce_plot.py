@@ -70,6 +70,7 @@ def Main(ArgList):
     plt.xlim(0.5,len(eci)+0.5)
     #plt.xticks(numpy.arange(1,len(eci)))
     #plt.xticks([0,1,2,10,13],['null','point','pair','trip','quad'])
+    plt.tight_layout()
     plt.savefig('%s-eci.%s' %(args.property,args.filetype))
     plt.close()
 

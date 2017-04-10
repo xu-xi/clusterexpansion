@@ -5,15 +5,15 @@ from myfunc import initstr,occupy,ce_energy
 def check_vasp_error(index):
     'check if current calculation is converged or not'
     if os.path.isfile('vasp.out.relax'):
-        if subprocess.check_call('grep required vasp.out.relax',shell=True)!=0:
+        if subprocess.call('grep required vasp.out.relax',shell=True)!=0:
             os.mknod('error')
             sys.stderr.write('ERROR in %s, check the output' % (index))
     elif os.path.isfile('vasp.out.static'):
-        if subprocess.check_call('grep required vasp.out.static',shell=True)!=0:
+        if subprocess.call('grep required vasp.out.static',shell=True)!=0:
             os.mknod('error')
             sys.stderr.write('ERROR in %s, check the output' % (index))
     elif os.path.isfile('vasp.out'):
-        if subprocess.check_call('grep required vasp.out',shell=True)!=0:
+        if subprocess.call('grep required vasp.out',shell=True)!=0:
             os.mknod('error')
             sys.stderr.write('ERROR in %s, check the output' % (index))
 

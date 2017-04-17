@@ -17,7 +17,7 @@ def data_io(data,average):
                 sc_atom_number=len(file('str.out').readlines())-6
                 vasp_data=float(subprocess.check_output('cat %s' %(data),shell=True))
                 if average==True:
-                    ce_data=float(subprocess.check_output('corrdump -c -mi -l=../lat.in -cf=../clusters.out -eci=../%s.ecimult' %(args.property),shell=True))
+                    ce_data=float(subprocess.check_output('corrdump -c -mi -l=../lat.in -cf=../clusters.out -eci=../%s.ecimult' %(data),shell=True))
                 else:
                     ce_data=(sc_atom_number/lat_atom_number)*float(subprocess.check_output('corrdump -c -l=../lat.in -cf=../clusters.out -eci=../%s.eci' %(data),shell=True))
                 datafile.write('%.5f\t%.5f\n' %(ce_data,vasp_data))

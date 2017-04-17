@@ -60,8 +60,9 @@ def initstr(lattice,superlattice):
 	try:
 		latfile=file(lattice,'r')
 		supercell=file(superlattice,'r')
-	except IOError:
-                print 'ERROR: can not read lat.in or supercell.in';sys.exit(1)
+	except IOError,error_msg:
+                print error_msg
+                sys.exit(1)
 
 	strfile=file('str.out','w')
 	for i in range(3):
@@ -320,14 +321,13 @@ def bandgap_temp(temperature):
     try:
         mcdata=loadtxt('mc.out')
         eci=loadtxt('../bandgap.ecimult')
-    except IOError:
-        print 'ERROR: can not read mc.out or bandgap.ecimult.';sys.exit(1)
+    except IOError,error_msg:
+        print error_msg
+        sys.exit(1)
 
     noc=len(file('bandgap.ecimult').readlines()) #number of clusters
     mc_temps=list(mcdata[:,0]) #temperatures of MC simulation
     clus_corr_funcs=mcdata[:,-noc:] #cluster correlation functions
     bandgap=list(dot(clus_corr_funcs,eci))
     return bandgap[mc_temps.index(temperature)]
-
-
 

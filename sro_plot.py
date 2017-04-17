@@ -19,7 +19,6 @@ def Main(Arglist):
     mcdata=numpy.loadtxt(args.mcfile)
     mc_temps=list(mcdata[:,0])
 
-
     #plot cluster correlation functions from MC simulations
     clus_include,clus_exclude=read_clusters(args.order)
     if args.clus_number!=None and args.clus_number <= clus_include:

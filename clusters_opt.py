@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import subprocess,numpy,argparse
+import subprocess,numpy,argparse,os
 from myfunc import read_clusters
 
 def clusters_optimizer(max_cluster_number,property_to_expand,average=False):

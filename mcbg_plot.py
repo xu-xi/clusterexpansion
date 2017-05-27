@@ -27,7 +27,7 @@ def Main(Arglist):
     for i in range(len(eci)):
         rd_bg+=eci[i]*(2*args.concentration-1)**order[i]
 
-    noc=len(file('bandgap.ecimult').readlines()) #number of clusters
+    noc=len(file(args.eci_file).readlines()) #number of clusters
     mc_temps=list(mcdata[:,0]) #temperatures of MC simulation
     clus_corr_funcs=mcdata[:,-noc:] #cluster correlation functions
     bandgap=numpy.dot(clus_corr_funcs,eci)

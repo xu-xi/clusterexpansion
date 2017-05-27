@@ -2,7 +2,7 @@
 import sys,os,itertools,shutil,argparse
 from myfunc import *
 
-parser=argparse.ArgumentParser(description='GENerate all STRuctures according to translation symmetry',
+parser=argparse.ArgumentParser(description='GENerate all STRuctures according to translation symmetry. Following input files are needed: lat.in, str.in, clusters.out, eci.out, supercell.in',
 		formatter_class=argparse.ArgumentDefaultsHelpFormatter) 
 parser.add_argument('-f','--file',default='str.in',dest='latfile',help="the input lattice file")
 parser.add_argument('-s','--supercell',default='supercell.in',dest='supercell_file',help="the input supercell file")

@@ -9,7 +9,6 @@ def Main(Arglist):
     parser.add_argument('-T',type=int,dest='temp',required=True,help="temperature")
     args=parser.parse_args()
 
-    #read data file
     subprocess.check_call('getclus > clusters.tmp',shell=True)
     cluster_number=len(file('clusters.tmp').readlines())
     os.remove('clusters.tmp')

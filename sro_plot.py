@@ -21,7 +21,10 @@ def Main(Arglist):
 
     #plot cluster correlation functions from MC simulations
     clus_include,clus_exclude=read_clusters(args.order)
-    if args.clus_number!=None and args.clus_number <= clus_include:
+    if clus_include > 10:
+        print 'WARNING: too many clusters to display!'
+        #clus_include=10
+    if args.clus_number!=None and args.clus_number < clus_include:
         clus_include=args.clus_number
 
     noc=len(file('eci.out').readlines())-clus_exclude
@@ -30,16 +33,26 @@ def Main(Arglist):
     for i in range(clus_include):
         clus_corr_funcs.append(list(mcdata[:,-noc+i]))
     for i in range(len(clus_corr_funcs)):
-        plt.plot(mc_temps,clus_corr_funcs[i],label='%s,%s' %(args.order,i+1))
+        if args.order==1:
+            plt.plot(mc_temps,[(j+1)/2 for j in clus_corr_funcs[i]],label='%s,%s' %(args.order,i+1))
+        else:
+            plt.plot(mc_temps,clus_corr_funcs[i],label='%s,%s' %(args.order,i+1))
 
     #plot the short-range orders of random state
-    random_corr=(2*args.concentration-1)**args.order
-    plt.plot(mc_temps,[random_corr]*len(mc_temps),linestyle='dashed',linewidth=1,c='k',label='random')
+    if args.order==1:
+        plt.plot(mc_temps,[args.concentration]*len(mc_temps),linestyle='dashed',linewidth=1,c='k',label='random')
+    else:
+        random_corr=(2*args.concentration-1)**args.order
+        plt.plot(mc_temps,[random_corr]*len(mc_temps),linestyle='dashed',linewidth=1,c='k',label='random')
 
     #details of the plot
     plt.title(args.title)
     plt.xlabel('Temperature/K')
-    plt.ylabel('Cluster Correlation Functions')
+    if args.order==1:
+        plt.ylabel('Concentration x')
+    else:
+        plt.ylabel('Cluster Correlation Functions')
+
     if args.temp0==None:
         plt.xlim(min(mc_temps),max(mc_temps))
     else:

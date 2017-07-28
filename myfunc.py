@@ -38,7 +38,7 @@ def occupy(strfile,sublattice,atomlist):
 	i=0
 	for sites in sublattice:
 		if len(sites)!=len(atomlist[i]):
-			print 'ERROR: the number of site do not equal that of atoms'
+			print 'ERROR: the number of site (%s) do not equal that of atoms (%s)' %(len(sites),len(atomlist[i]))
 			print sites
 			print atomlist[i]
 			sys.exit(1)
@@ -228,8 +228,9 @@ def getbandgap():
 
 def touch(filename,value):
 	'write a file with a value for cluster expansion'
-	with open(filename) as afile:
-		afile.write('%s' %(value))
+        afile=file(filename,'w')
+	afile.write('%s' %(value))
+        afile.close()
 
 def objective_correlation_functions(concentration,cluster_order):
 	'generate the objective cluster correlation functions or read it from input file'

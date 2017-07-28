@@ -25,21 +25,28 @@ def data_io(data,average):
     datafile.close()
 
 def Main(ArgList):
-    parser=argparse.ArgumentParser(description='plot results of cluster expansion for the given property.',
+    parser=argparse.ArgumentParser(description='plot results of cluster expansion for the given property and output data files',
                     formatter_class=argparse.ArgumentDefaultsHelpFormatter) 
     parser.add_argument('-p',default='energy',dest='property',help="the property to plot")
     parser.add_argument('-a',action='store_true',dest='average',help="decide whether the property to be averaged")
     parser.add_argument('--ft',dest='filetype',default='png',help="any filetype supported by matplotlib")
-    parser.add_argument('-t',dest='title',type=str,default='',help="the title of the plot of ECI")
+    parser.add_argument('--cv',dest='print_cv',action='store_true',help="print Cross Validation and Mean Standard Error with the plot")
+    parser.add_argument('-t',dest='title',type=str,default='',help="add the title of the plot of ECI")
     parser.add_argument('-o',dest='order',type=int,default=1,help="plot ECI from which order of clusters. The default value is 1 since the ECI of null cluster is just a shift")
     args=parser.parse_args()
 
+    cv=float(subprocess.check_output('clusterexpand -e -cv energy | tail -1',shell=True))
     #read data file
     data_io(args.property,args.average)
     data=numpy.loadtxt('%s.dat' % (args.property))
     index=list(data[:,0])
     ce_data=list(data[:,1])
     vasp_data=list(data[:,2])
+    
+    st_error=0
+    for i in range(len(ce_data)):
+        st_error+=abs(ce_data[i]-vasp_data[i])
+    st_error/=len(ce_data)
 
     #plot calculated and fitted values
     plt.scatter(ce_data,vasp_data,c='.25',s=50)
@@ -55,6 +62,8 @@ def Main(ArgList):
     plt.ylim(b-d,a+d)
     plt.xlabel('Fitted %s/eV' % (args.property))
     plt.ylabel('Calculated %s/eV' % (args.property))
+    if args.print_cv:
+        plt.text(a-d,b,'CV=%.3f eV\nME=%.3f eV' %(cv,st_error))
     plt.savefig('%s-ce.%s' %(args.property,args.filetype))
     plt.close()
     

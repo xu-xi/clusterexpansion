@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-import os,subprocess,numpy,argparse,sys,subprocess
+import os,subprocess,numpy,argparse,sys,subprocess,saveagr
 import matplotlib.pyplot as plt
 from myfunc import read_clusters
 
-def data_io(data,average):
+def data_io(data,average=False):
     'collect successfully finished results and output them to a data file'
     lat_atom_number=len(file('lat.in').readlines())-6
     datafile=file('%s.dat' % (data),'w')
@@ -33,15 +33,18 @@ def Main(ArgList):
     parser.add_argument('--cv',dest='print_cv',action='store_true',help="print Cross Validation and Mean Standard Error with the plot")
     parser.add_argument('-t',dest='title',type=str,default='',help="add the title of the plot of ECI")
     parser.add_argument('-o',dest='order',type=int,default=1,help="plot ECI from which order of clusters. The default value is 1 since the ECI of null cluster is just a shift")
+    #parser.add_argument('-x',dest='saveagr',action='store_true',help="save matplotlib created figures as xmgrace file")
     args=parser.parse_args()
 
-    cv=float(subprocess.check_output('clusterexpand -e -cv energy | tail -1',shell=True))
+    if args.average:
+        cv=float(subprocess.check_output('clusterexpand -e -pa -cv %s | tail -1' %(args.property),shell=True))
+    else:
+        cv=float(subprocess.check_output('clusterexpand -e -cv %s | tail -1' %(args.property),shell=True))
     #read data file
     data_io(args.property,args.average)
-    data=numpy.loadtxt('%s.dat' % (args.property))
-    index=list(data[:,0])
-    ce_data=list(data[:,1])
-    vasp_data=list(data[:,2])
+    data=numpy.loadtxt('%s.dat' % (args.property),usecols=(1,2))
+    ce_data=list(data[:,0])
+    vasp_data=list(data[:,1])
     
     st_error=0
     for i in range(len(ce_data)):
@@ -63,7 +66,7 @@ def Main(ArgList):
     plt.xlabel('Fitted %s/eV' % (args.property))
     plt.ylabel('Calculated %s/eV' % (args.property))
     if args.print_cv:
-        plt.text(a-d,b,'CV=%.3f eV\nME=%.3f eV' %(cv,st_error))
+        plt.text(a-2*d,b,'CV=%.3f eV\nMAE=%.3f eV' %(cv,st_error),)
     plt.savefig('%s-ce.%s' %(args.property,args.filetype))
     plt.close()
     
@@ -79,7 +82,6 @@ def Main(ArgList):
     plt.xlim(0.5,len(eci)+0.5)
     #plt.xticks(numpy.arange(1,len(eci)))
     #plt.xticks([0,1,2,10,13],['null','point','pair','trip','quad'])
-    plt.tight_layout()
     plt.savefig('%s-eci.%s' %(args.property,args.filetype))
     plt.close()
 

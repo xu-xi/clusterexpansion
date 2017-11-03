@@ -2,7 +2,7 @@
 import subprocess,numpy,argparse,os
 from myfunc import read_clusters
 
-def clusters_optimizer(max_cluster_number,property_to_expand,average=False):
+def clusters_optimizer(property_to_expand,max_cluster_number,scan_step,average=False):
     'optimal cluster expansion construction'
     pair_distance=0.5
     triplet_distance=0
@@ -25,13 +25,13 @@ def clusters_optimizer(max_cluster_number,property_to_expand,average=False):
     #null_point_cluster_number=int(subprocess.check_output('getclus | wc -l',shell=True))
 
     while 1:
-        pair_distance+=args.step
+        pair_distance+=scan_step
         subprocess.check_call('corrdump -clus -2=%s' %(pair_distance),shell=True)
         cluster_number=int(subprocess.check_output('getclus | wc -l',shell=True))
         if cluster_number>max_cluster_number:
             break
-        for triplet_distance in numpy.arange(0,pair_distance,args.step):
-            for quad_distance in numpy.arange(0,triplet_distance,args.step):
+        for triplet_distance in numpy.arange(0,pair_distance,scan_step):
+            for quad_distance in numpy.arange(0,triplet_distance,scan_step):
                 subprocess.check_call('corrdump -clus -2=%s -3=%s -4=%s' %(pair_distance,triplet_distance,quad_distance),shell=True)
                 #print pair_distance,triplet_distance,quad_distance
                 clusters=[]
@@ -68,16 +68,15 @@ def clusters_optimizer(max_cluster_number,property_to_expand,average=False):
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description='optimal cluster expansion construction',
                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-n',dest='max_clusters_number',type=int,help="the maximum number of clusters")
+    parser.add_argument('-n',dest='max_cluster_number',type=int,help="the maximum number of clusters")
+    parser.add_argument('-a',action='store_true',dest='average',help="decide whether the property to be averaged")
     parser.add_argument('-p',default='energy',dest='property',help="the property to expand")
     parser.add_argument('-s',type=float,default=0.5,dest='step',help="the scan step of clusters")
-    #parser.add_argument('-o',action='store_true',dest='opt_only',help="do not do cluster expansion, only optimize the choice of clusters")
-    #parser.add_argument('--version',action='version',version='2017.2.23',help="output the version of the program")
 
     args=parser.parse_args()
     
-    if args.max_clusters_number!=None:
-        clusters_optimizer(args.max_clusters_number,args.property)
+    if args.max_cluster_number!=None:
+        clusters_optimizer(args.property,args.max_cluster_number,args.step,args.average)
     else:
         structure_number=0
         #scan current directory to collect finished calculation
@@ -85,7 +84,7 @@ if __name__=='__main__':
             fullpath=os.path.join(os.environ['PWD'],item)
             if os.path.isdir(fullpath):
                 os.chdir(fullpath)
-                if os.path.isfile('energy') and not os.path.isfile('error'):
+                if os.path.isfile(args.property) and not os.path.isfile('error'):
                     structure_number+=1
                     os.chdir('../')
-        clusters_optimizer(structure_number,args.property)
+        clusters_optimizer(args.property,structure_number,args.step,args.average)

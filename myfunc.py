@@ -142,12 +142,7 @@ def initstr(lattice,superlattice):
 
 def ce_energy(ecifile,strfile):
 	'get energy from cluster expansion by the ATAT code corrdump'
-	cmd='corrdump -c -eci=%s -s=%s' %(ecifile,strfile)
-	failure,output=commands.getstatusoutput(cmd)
-	if failure:
-		print 'ERROR: running corrdump failed\n%s\n%s' %(cmd,output)
-		sys.exit(1)
-	return float(output)
+        return float(subprocess.check_output('corrdump -c -eci=%s -s=%s',shell=True))
 
 def mdenergy(mcstep):
 	'calculate Madelung energy' 
@@ -327,7 +322,7 @@ def bandgap_temp(temperature):
         sys.exit(1)
 
     noc=len(file('bandgap.ecimult').readlines()) #number of clusters
-    mc_temps=list(mcdata[:,0]) #temperatures of MC simulation
+    mc_temps=map(round,list(mcdata[:,0])) #temperatures of MC simulation
     clus_corr_funcs=mcdata[:,-noc:] #cluster correlation functions
     bandgap=list(dot(clus_corr_funcs,eci))
     return bandgap[mc_temps.index(temperature)]

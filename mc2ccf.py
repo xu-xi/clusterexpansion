@@ -22,7 +22,7 @@ def Main(Arglist):
             print error_msg1,'\n',error_msg2
             sys.exit(1)
 
-    mc_temps=list(mcdata[:,0])
+    mc_temps=map(round,list(mcdata[:,0]))
 
     if args.temp not in mc_temps:
         print 'ERROR: %s is not available' % (args.temp)

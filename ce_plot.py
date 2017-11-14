@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os,subprocess,numpy,argparse,sys,subprocess,saveagr
+import os,subprocess,numpy,argparse,sys,subprocess
 import matplotlib.pyplot as plt
 from myfunc import read_clusters
 
@@ -33,7 +33,6 @@ def Main(ArgList):
     parser.add_argument('--cv',dest='print_cv',action='store_true',help="print Cross Validation and Mean Standard Error with the plot")
     parser.add_argument('-t',dest='title',type=str,default='',help="add the title of the plot of ECI")
     parser.add_argument('-o',dest='order',type=int,default=1,help="plot ECI from which order of clusters. The default value is 1 since the ECI of null cluster is just a shift")
-    #parser.add_argument('-x',dest='saveagr',action='store_true',help="save matplotlib created figures as xmgrace file")
     args=parser.parse_args()
 
     if args.average:
@@ -70,20 +69,5 @@ def Main(ArgList):
     plt.savefig('%s-ce.%s' %(args.property,args.filetype))
     plt.close()
     
-    #plot ECIs
-    clus_include,clus_exclude=read_clusters(args.order)
-    eci=list(numpy.loadtxt('%s.eci' %(args.property)))[clus_exclude:]
-    plt.bar(numpy.arange(1,len(eci)+1),eci,color='.25')
-    plt.axhline(y=0,linewidth=.5,c='k')
-
-    plt.title(args.title)
-    plt.xlabel('Index of clusters')
-    plt.ylabel('ECI/eV')
-    plt.xlim(0.5,len(eci)+0.5)
-    #plt.xticks(numpy.arange(1,len(eci)))
-    #plt.xticks([0,1,2,10,13],['null','point','pair','trip','quad'])
-    plt.savefig('%s-eci.%s' %(args.property,args.filetype))
-    plt.close()
-
 if __name__=='__main__':
     Main(sys.argv)

@@ -312,6 +312,17 @@ def read_clusters(order):
         exclude_clus_num+=clus_data.count(i)
     return clus_data.count(order),exclude_clus_num
 
+def read_cluster_number():
+    'return a list whose elements are the number of clusters of increasing orders'
+    subprocess.check_call('getclus > clusters.tmp',shell=True)
+    clus_data=list(loadtxt('clusters.tmp')[:,0])
+    os.remove('clusters.tmp')
+    clus_order=set(map(int,clus_data))
+    clus_number=[]
+    for i in clus_order:
+        clus_number.append(clus_data.count(i))
+    return clus_number
+
 def bandgap_temp(temperature):
     #read data file
     try:

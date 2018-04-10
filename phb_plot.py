@@ -14,11 +14,13 @@ for i in args.phb:
     x1=list((datafile[:,2]+1)/2)
     x2=list((datafile[:,3]+1)/2)
 
-    #T+=list(reversed(T))
-    #x=x1+list(reversed(x2))
+    T+=list(reversed(T))
+    x=x1+list(reversed(x2))
 
-    plt.scatter(x1,T)
-    plt.scatter(x2,T)
+    plt.plot(x,T,linewidth=2.5)
+    #plt.scatter(x,T)
+    #plt.scatter(x1,T)
+    #plt.scatter(x2,T)
 
 plt.xlabel('Concentration x')
 plt.ylabel('Temperature/K')

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import subprocess,numpy,argparse,os
-from myfunc import read_clusters
+from celib import read_cluster_number
 
 def clusters_optimizer(property_to_expand,max_cluster_number,scan_step,average=False):
     'optimal cluster expansion construction'
@@ -13,9 +13,8 @@ def clusters_optimizer(property_to_expand,max_cluster_number,scan_step,average=F
 
     cluster_number_list=[[0,0,0]]
     cv_list=[]
-    cv_file=file('cv.log','w')
-    cv_file.write('#number CV pair triplet quad\n')
-
+    cv_file=file('cv-%s.log' %(property_to_expand),'w')
+    cv_file.write('#number CV pair trip quad\n')
     subprocess.check_call('corrdump -clus -2=0.5',shell=True)
     cluster_number=int(subprocess.check_output('getclus | wc -l',shell=True))
     if average==False:
@@ -30,42 +29,55 @@ def clusters_optimizer(property_to_expand,max_cluster_number,scan_step,average=F
         cluster_number=int(subprocess.check_output('getclus | wc -l',shell=True))
         if cluster_number>max_cluster_number:
             break
-        try:
-            for triplet_distance in numpy.arange(0,pair_distance,scan_step):
-                for quad_distance in numpy.arange(0,triplet_distance,scan_step):
-                    subprocess.check_call('corrdump -clus -2=%s -3=%s -4=%s' %(pair_distance,triplet_distance,quad_distance),shell=True)
-                    #print pair_distance,triplet_distance,quad_distance
-                    clusters=[]
-                    for i in [2,3,4]:
-                        a,b=read_clusters(i)
-                        clusters.append(a)
-                    cluster_number=int(subprocess.check_output('getclus | wc -l',shell=True))
+        for triplet_distance in numpy.arange(0,pair_distance,scan_step):
+            subprocess.check_call('corrdump -clus -2=%s -3=%s' %(pair_distance,triplet_distance),shell=True)
+            cluster_number=int(subprocess.check_output('getclus | wc -l',shell=True))
+            if cluster_number>max_cluster_number:
+                break
+            for quad_distance in numpy.arange(0,triplet_distance,scan_step):
+                subprocess.check_call('corrdump -clus -2=%s -3=%s -4=%s' %(pair_distance,triplet_distance,quad_distance),shell=True)
+                #print pair_distance,triplet_distance,quad_distance
+                clusters=[]
+                for i in [2,3,4]:
+                    try:
+                        clusters.append(read_cluster_number()[i])
+                    except:
+                        clusters.append(0)
+                cluster_number=int(subprocess.check_output('getclus | wc -l',shell=True))
+                #print cluster_number
+                if cluster_number>max_cluster_number:
+                    break
+                if clusters not in cluster_number_list:
+                    cluster_number_list.append(clusters)
                     #print cluster_number
-                    if cluster_number>max_cluster_number:
-                        raise ValueError
-                    if clusters not in cluster_number_list:
-                        cluster_number_list.append(clusters)
-                        #print cluster_number
-                        #print pair_distance,triplet_distance,quad_distance
-                        if average==False:
-                            cv=float(subprocess.check_output('clusterexpand -e -cv %s | tail -1' %(property_to_expand),shell=True))
-                        else:
-                            cv=float(subprocess.check_output('clusterexpand -e -pa -cv %s | tail -1' %(property_to_expand),shell=True))
-                        cv_file.write('%s %s %s %s %s\n' %(cluster_number,cv,pair_distance,triplet_distance,quad_distance))
-                        if cv<min(cv_list):
-                            optimal_pair_distance=pair_distance
-                            optimal_triplet_distance=triplet_distance
-                            optimal_quad_distance=quad_distance
-                        cv_list.append(cv)
-        except ValueError:
-            pass
+                    #print pair_distance,triplet_distance,quad_distance
+                    if average==False:
+                        cv=float(subprocess.check_output('clusterexpand -e -cv %s | tail -1' %(property_to_expand),shell=True))
+                    else:
+                        cv=float(subprocess.check_output('clusterexpand -e -pa -cv %s | tail -1' %(property_to_expand),shell=True))
+                    #cv_file.write('%s %s %s %s %s\n' %(cluster_number,cv,pair_distance,triplet_distance,quad_distance))
+                    cv_file.write('%s %s %s %s %s\n' %(cluster_number,cv,clusters[0],clusters[1],clusters[2]))
+                    cv_file.flush()
+                    if cv<min(cv_list):
+                        optimal_pair_distance=pair_distance
+                        optimal_triplet_distance=triplet_distance
+                        optimal_quad_distance=quad_distance
+                    cv_list.append(cv)
     cv_file.close()
     subprocess.check_call('corrdump -clus -2=%s -3=%s -4=%s' %(optimal_pair_distance,optimal_triplet_distance,optimal_quad_distance),shell=True)
+    #cluster_number=read_cluster_number()
     if average==False:
         optimal_cv=float(subprocess.check_output('clusterexpand -e -cv %s | tail -1' %(property_to_expand),shell=True))
     else:
         optimal_cv=float(subprocess.check_output('clusterexpand -e -pa -cv %s | tail -1' %(property_to_expand),shell=True))
-    return optimal_cv
+    clusters=[]
+    for i in [2,3,4]:
+        try:
+            clusters.append(read_cluster_number()[i])
+        except:
+            clusters.append(0)
+    return optimal_cv,clusters[0],clusters[1],clusters[2]
+
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description='optimal cluster expansion construction',
@@ -88,5 +100,5 @@ if __name__=='__main__':
                 os.chdir(fullpath)
                 if os.path.isfile(args.property) and not os.path.isfile('error'):
                     structure_number+=1
-                    os.chdir('../')
+                os.chdir('../')
         clusters_optimizer(args.property,structure_number,args.step,args.average)

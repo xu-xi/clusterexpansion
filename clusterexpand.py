@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import argparse,sys,os,shutil,subprocess,random,copy,numpy,socket
-from myfunc import initstr,occupy,ce_energy
+from celib import initstr,occupy,ce_energy
 from clusters_opt import clusters_optimizer
 
 def vasp_no_error(index):

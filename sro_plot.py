@@ -1,7 +1,10 @@
 #!/usr/bin/env python
-import numpy,argparse,subprocess,os,sys,saveagr
+import numpy,argparse,subprocess,os,sys
+import matplotlib as mpl
 import matplotlib.pyplot as plt
-from myfunc import read_clusters
+from celib import read_clusters
+
+#plt.style.use('ggplot')
 
 
 def Main(Arglist):
@@ -10,9 +13,9 @@ def Main(Arglist):
     parser.add_argument('-f',default='mc.out',dest='mcfile',help="The Monte Carlo data file ")
     parser.add_argument('-x',type=float,required=True,dest='concentration',help="The concentration of component atom")
     parser.add_argument('-o',type=int,dest='order',default=2,help="The order of clusters to plot")
-    parser.add_argument('-t',type=str,dest='title',default='',help="The title of the plot")
+    #parser.add_argument('-t',type=str,dest='title',default='',help="The title of the plot")
     parser.add_argument('-T',type=int,dest='temp0',help="The initial temperature of the plot")
-    parser.add_argument('--ft',type=str,dest='filetype',default='png',help="Any filetype supported by Matplotlib")
+    #parser.add_argument('--ft',type=str,dest='filetype',default='png',help="Any filetype supported by Matplotlib")
     parser.add_argument('-n',type=int,dest='clus_number',help="The number of cluster to plot")
     parser.add_argument('-E',action='store_true',dest='plot_averaged_energy',help="Plot averaged energy vs temperature as well")
     args=parser.parse_args()
@@ -29,8 +32,8 @@ def Main(Arglist):
             for i in range(len(E_avg)):
                 Free_energy=E_avg[i]+mc_temps[i]*k_b*(args.concentration*numpy.log(args.concentration)+(1-args.concentration)*numpy.log(1-args.concentration))
                 F.append(Free_energy)
-            plt.plot(mc_temps,E_avg,'o--')
-            plt.plot(mc_temps,F,'^--')
+            plt.plot(mc_temps,E_avg,'o--',c='C3')
+            plt.plot(mc_temps,F,'^--',c='C0')
             plt.show()
             plt.close()
         else:
@@ -39,15 +42,19 @@ def Main(Arglist):
             #F=list(mcdata[:,4])
 
             fig,ax1=plt.subplots()
-            ax1.plot(mc_temps,E_avg,'o--',linewidth=0.5,color='r')
+            ax1.plot(mc_temps,E_avg,'o--',linewidth=0.5,color='C3')
             ax1.set_xlabel('Temperature/K')
-            ax1.set_ylabel('Averaged Energy/eV',color='r')
-            ax1.tick_params('y',colors='r')
+            ax1.set_ylabel('Averaged Energy/eV',color='C3')
+            ax1.tick_params('y',colors='C3')
 
             ax2=ax1.twinx()
-            ax2.plot(mc_temps,E2,'^--',linewidth=0.5,color='b')
-            ax2.set_ylabel(r'Variance of Energy/($10^{-7}$eV$^2$)',color='b')
-            ax2.tick_params('y',colors='b')
+            ax2.plot(mc_temps,E2,'^--',linewidth=0.5,color='C0')
+            ax2.set_ylabel(r'Variance of Energy/($10^{-7}$eV$^2$)',color='C0')
+            ax2.tick_params('y',colors='C0')
+            if args.temp0==None:
+                plt.xlim(min(mc_temps),max(mc_temps))
+            else:
+                plt.xlim(args.temp0,max(mc_temps))
             plt.show()
             #plt.xlim(min(mc_temps),max(mc_temps))
             #plt.tight_layout()
@@ -86,7 +93,7 @@ def Main(Arglist):
         plt.plot(mc_temps,[random_corr]*len(mc_temps),linestyle='dashed',c='k',label='random')
 
     #details of the plot
-    plt.title(args.title)
+    #plt.title(args.title)
     plt.xlabel('Temperature/K')
     if args.order==1:
         plt.ylabel('Concentration x')

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import numpy,subprocess,argparse,sys
 import matplotlib.pyplot as plt
-from myfunc import read_cluster_number
+from celib import read_clusters,read_cluster_number
 
 def eci_at_certain_temperature(ecifile,temperature):
     'return ECIs at given temperature from teci.out'
@@ -16,13 +16,13 @@ def eci_at_certain_temperature(ecifile,temperature):
     return teci[index:(index+cluster_number)]
 
 def Main(ArgList):
-    parser=argparse.ArgumentParser(description='Plot ECIs against the index of clusters, including two-body clusters and higher order clusters. Temperature-dependent ECIs plotting is also supported.',
+    parser=argparse.ArgumentParser(description='Plot ECIs against the index of clusters, including two-body clusters and higher order clusters. Temperature-dependent ECIs plotting is supported and the argument -T is required in this case.',
                     formatter_class=argparse.ArgumentDefaultsHelpFormatter) 
     parser.add_argument('-f',type=str,dest='ecifile',default='eci.out',help="The ECI file")
     parser.add_argument('-o',dest='order',type=int,default=2,help="plot ECI from which order of clusters.")
     parser.add_argument('-T',type=int,dest='temp',nargs='+',help="temperature(s)")
     parser.add_argument('--ft',type=str,dest='filetype',default='png',help="any filetype supported by Matplotlib")
-    #parser.add_argument('-m',type=int,dest='mode',default=0,help="the display mode of ECI")
+    parser.add_argument('-m',type=int,dest='mode',default=0,help="the display mode of ECI. Mode 0: bar; Mode 1: line for each order cluster.")
     args=parser.parse_args()
 
     cluster_number=read_cluster_number()
@@ -32,16 +32,15 @@ def Main(ArgList):
     for i in range(args.order):
         cluster_number.pop(0)
 
-    def new_cluster_number(alist):
-        blist=[]
-        for i in range(len(alist)):
+    def new_cluster_number(old_list):
+        new_list=[]
+        for i in range(len(old_list)):
             k=0
             for j in range(i):
-                k+=alist[j]
-            blist.append(k)
-        return blist
+                k+=old_list[j]
+            new_list.append(k)
+        return new_list
             
-
     #if args.mode==0:
    # 
    #     f,ax=plt.subplots(len(args.temp),sharex=True,sharey=True)
@@ -57,7 +56,22 @@ def Main(ArgList):
    #     f.subplots_adjust(hspace=0.0)
     if args.temp == None:
         eci=list(numpy.loadtxt('%s' %(args.ecifile)))[clus_exclude:]
-        plt.bar(numpy.arange(1,len(eci)+1),eci,color='.25')
+        if args.mode==0:
+            plt.bar(numpy.arange(1,len(eci)+1),eci,color='.25')
+            for i in new_cluster_number(cluster_number):
+                plt.axvline(x=i+0.5,linestyle='dashed',linewidth=.5,c='k')
+            plt.xlim(xmin=0.5)
+            plt.xticks(range(1,len(eci),len(eci)/5))
+        else:
+            eci=list(numpy.loadtxt('%s' %(args.ecifile)))
+            cluster_number,cluster_exclude=read_clusters(2)
+            plt.plot(range(cluster_number),eci[cluster_exclude:(cluster_number+cluster_exclude)],'o--',ms=5,linewidth=1,label='2-body cluster')
+            cluster_number,cluster_exclude=read_clusters(3)
+            plt.plot(range(cluster_number),eci[cluster_exclude:(cluster_number+cluster_exclude)],'^--',ms=5,linewidth=1,label='3-body cluster')
+            cluster_number,cluster_exclude=read_clusters(4)
+            plt.plot(range(cluster_number),eci[cluster_exclude:(cluster_number+cluster_exclude)],'s--',ms=5,linewidth=1,label='4-body cluster')
+            plt.legend(loc=0,fontsize=12)
+
         #plt.xticks(numpy.arange(1,len(eci)))
         #plt.xticks([0,1,2,10,13],['null','point','pair','trip','quad'])
     else:
@@ -66,11 +80,7 @@ def Main(ArgList):
             plt.plot(numpy.arange(1,len(eci)+1),eci,'o--',linewidth=1,label='T=%sK' %(args.temp[i]))
             plt.legend(loc=0,fontsize=10)
 
-    for i in new_cluster_number(cluster_number):
-        plt.axvline(x=i+0.5,linestyle='dashed',linewidth=.5,c='k')
     plt.axhline(y=0,linewidth=.5,c='k')
-    plt.xlim(0.5,len(eci)+0.5)
-    plt.xticks(range(1,len(eci),len(eci)/5))
     plt.xlabel('Index of clusters')
     plt.ylabel('ECI/eV')
     plt.show()

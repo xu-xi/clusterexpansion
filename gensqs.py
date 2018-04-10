@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import sys,os,shutil,argparse,numpy,subprocess,itertools
-from myfunc import *
+from celib import *
 
 parser=argparse.ArgumentParser(description='GENerate the best SQS according to enumeration method, a file named tcorr.out can be used to define objective correlation functions',
 		formatter_class=argparse.ArgumentDefaultsHelpFormatter) 

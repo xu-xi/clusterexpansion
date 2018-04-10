@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-import sys,re,math,commands,itertools,shutil,os,random,subprocess
-from numpy import *
+import sys,re,math,commands,itertools,shutil,os,random,subprocess,sympy
+import numpy as np
 from fractions import Fraction
 from compiler.ast import flatten
 
@@ -13,9 +13,9 @@ def listwrite(afile,alist):
 			afile.write(str(j)+' ')
 		afile.write('\n')
 
-def projection(vector,bases):
-	'return a list of the coefficients of a vector on a base'
-	return list(dot(linalg.inv(transpose(bases)),vector))
+def projection(vector,basis):
+	'return a list of the coefficients of a vector on a basis set'
+	return list(np.dot(np.linalg.inv(np.transpose(basis)),vector))
 
 def translation(site,platvect,slatvect):
 	'generate a list of sites according to translation symmetry'
@@ -26,7 +26,7 @@ def translation(site,platvect,slatvect):
         for i in range(int(min(a_project))-2,int(max(a_project))+2,1):
 		for j in range(int(min(b_project))-2,int(max(b_project))+2,1):
 			for k in range(int(min(c_project))-2,int(max(c_project))+2,1):
-				tsite=array(site)+platvect[0]*i+platvect[1]*j+platvect[2]*k
+				tsite=np.array(site)+platvect[0]*i+platvect[1]*j+platvect[2]*k
 				project=projection(tsite,slatvect)
 				if min(project)>=0 and max(project)<1:
 					tsite=list(tsite)
@@ -58,25 +58,25 @@ def occupysaj(strfile,sublattice,atomlist):
 def initstr(lattice,superlattice):
 	'generate a random occupied structure'
 	try:
-		latfile=file(lattice,'r')
-		supercell=file(superlattice,'r')
+            latfile=file(lattice,'r')
+            supercell=file(superlattice,'r')
 	except IOError,error_msg:
-                print error_msg
-                sys.exit(1)
+            print error_msg
+            sys.exit(1)
 
 	strfile=file('str.out','w')
 	for i in range(3):
-		strfile.write(latfile.readline())
+	    strfile.write(latfile.readline())
 	latvect=[]
 	strvect=[]
 	for i in range(3):
-		latvect.append(map(float,latfile.readline().split()))
-		strvect.append(map(float,supercell.readline().split()))
+	    latvect.append(map(float,latfile.readline().split()))
+	    strvect.append(map(float,supercell.readline().split()))
 	listwrite(strfile,strvect)
-	strvect=array(strvect)
-	latvect=array(latvect)
-	pvolume=abs(dot(latvect[0],cross(latvect[1],latvect[2])))
-	svolume=abs(dot(strvect[0],cross(strvect[1],strvect[2])))
+	strvect=np.array(strvect)
+	latvect=np.array(latvect)
+	pvolume=abs(np.dot(latvect[0],np.cross(latvect[1],latvect[2])))
+	svolume=abs(np.dot(strvect[0],np.cross(strvect[1],strvect[2])))
 	n=int(svolume/pvolume)
 	
 	isublattices=[]
@@ -87,23 +87,26 @@ def initstr(lattice,superlattice):
 	sitecount=[]
 	vatomlist=[]
 	for line in latfile:
+            if line=='\n' or line.startswith('#'):
+                pass
+            else:
 		g=re.findall(r'(\w+)=(\d+)/(\d+)',line.split()[3])
 		site=map(float,line.split()[:3])
 		sites=translation(site,latvect,strvect)
 		if g==[]:
-			isublattices.append(sites)
-			atoms=[line.split()[3]]*n
-			iatomlist.append(atoms)
+                    isublattices.append(sites)
+                    atoms=[line.split()[3]]*n
+                    iatomlist.append(atoms)
 		else:
-			site_atom=[]
-			site_c=[]
-			for i in range(len(g)):
-				site_atom.append(g[i][0])
-				site_c.append(Fraction(int(g[i][1]),int(g[i][2])))
-			if sum(site_c)!=1:
-				print 'ERROR: the occupy probabilities of one site must sum up to 1\n'
-				print line
-				sys.exit(1)
+                    site_atom=[]
+                    site_c=[]
+                    for i in range(len(g)):
+                        site_atom.append(g[i][0])
+                        site_c.append(Fraction(int(g[i][1]),int(g[i][2])))
+                    if sum(site_c)!=1:
+                        print 'ERROR: the occupy probabilities of one site must sum up to 1\n'
+                        print line
+                        sys.exit(1)
 			#atoms=[]
 			#for i in range(len(a)):
 			#		b=[a[i]]*int(n*c[i])
@@ -116,21 +119,21 @@ def initstr(lattice,superlattice):
 			#	vatoms.append(a)
 			#	vatomlist.append(atoms)
 			#	vsublattices.append(sites)
-			if site_atom in sublattice_atoms:
-				sitecount[sublattice_atoms.index(site_atom)]+=1
-				vsublattices[sublattice_atoms.index(site_atom)]+=sites
-			else:
-				sublattice_atoms.append(site_atom)
-				sublattice_c.append(site_c)
-				sitecount.append(1)
-				vsublattices.append(sites)
+                    if site_atom in sublattice_atoms:
+                        sitecount[sublattice_atoms.index(site_atom)]+=1
+                        vsublattices[sublattice_atoms.index(site_atom)]+=sites
+                    else:
+                        sublattice_atoms.append(site_atom)
+                        sublattice_c.append(site_c)
+                        sitecount.append(1)
+                        vsublattices.append(sites)
 	for i in range(len(sublattice_atoms)):
-		atoms=[]
-		for j in range(len(sublattice_atoms[i])):
-			b=[sublattice_atoms[i][j]]*int(n*sublattice_c[i][j]*sitecount[i])
-			atoms+=b
-		random.shuffle(atoms)
-		vatomlist.append(atoms)
+            atoms=[]
+            for j in range(len(sublattice_atoms[i])):
+                b=[sublattice_atoms[i][j]]*int(n*sublattice_c[i][j]*sitecount[i])
+                atoms+=b
+            random.shuffle(atoms)
+            vatomlist.append(atoms)
 
 	#print isublattices,iatomlist
 	#print vsublattices,vatomlist
@@ -142,7 +145,7 @@ def initstr(lattice,superlattice):
 
 def ce_energy(ecifile,strfile):
 	'get energy from cluster expansion by the ATAT code corrdump'
-        return float(subprocess.check_output('corrdump -c -eci=%s -s=%s',shell=True))
+        return float(subprocess.check_output('corrdump -c -eci=%s -s=%s' %(ecifile,strfile),shell=True))
 
 def mdenergy(mcstep):
 	'calculate Madelung energy' 
@@ -305,7 +308,7 @@ def skipchoice(alist,number):
 
 def read_clusters(order):
     subprocess.check_call('getclus > clusters.tmp',shell=True)
-    clus_data=list(loadtxt('clusters.tmp')[:,0])
+    clus_data=list(np.loadtxt('clusters.tmp')[:,0])
     os.remove('clusters.tmp')
     exclude_clus_num=0
     for i in range(order):
@@ -323,11 +326,10 @@ def read_cluster_number():
         clus_number.append(clus_data.count(i))
     return clus_number
 
-def bandgap_temp(temperature):
+def bandgap_temp(temperature,eci):
     #read data file
     try:
         mcdata=loadtxt('mc.out')
-        eci=loadtxt('../bandgap.ecimult')
     except IOError,error_msg:
         print error_msg
         sys.exit(1)
@@ -335,6 +337,59 @@ def bandgap_temp(temperature):
     noc=len(file('bandgap.ecimult').readlines()) #number of clusters
     mc_temps=map(round,list(mcdata[:,0])) #temperatures of MC simulation
     clus_corr_funcs=mcdata[:,-noc:] #cluster correlation functions
-    bandgap=list(dot(clus_corr_funcs,eci))
+    bandgap=list(np.dot(clus_corr_funcs,eci))
     return bandgap[mc_temps.index(temperature)]
+
+def calc_cv(cluster_function,eci,real_values):
+    'per site'
+    m = len(file('lat.in').readlines())-6 
+    cv = 0
+
+    #remove linear dependent columns of the matrix of cluster functions
+    a, inds = sympy.Matrix(cluster_function).T.rref()
+    cluster_function = cluster_function[:,inds]
+    #eci = eci[inds]
+    #print len(eci) 
+
+    G = np.dot(np.transpose(cluster_function),cluster_function) #Gramian matrix
+    print np.linalg.cond(G)
+    #print np.linalg.eig(G)[0]
+    x = np.linalg.inv(G) 
+    predicted_values = np.dot(cluster_function,eci)
+    for i in range(n):
+        cv += (((real_values[i]-predicted_values[i])/(1-np.dot(np.dot(cluster_function[i,:],x),np.transpose(cluster_function[i,:]))))**2)
+    return math.sqrt(cv/n)/m
+
+def read_cluster_function():
+    cluster_function=[]
+    subprocess.check_call('getclus > clusters.tmp',shell=True)
+    clus_multi=list(np.loadtxt('clusters.tmp')[:,2])
+    os.remove('clusters.tmp')
+    for item in os.listdir(os.environ['PWD']):
+        fullpath=os.path.join(os.environ['PWD'],item)
+        if os.path.isdir(fullpath):
+            os.chdir(fullpath)
+            if os.path.isfile('str.out') and not os.path.isfile('error'):
+                cluster_function.append(np.multiply(map(float,subprocess.check_output('corrdump -c -l=../lat.in -cf=../clusters.out',shell=True).split()),clus_multi))
+            os.chdir('../')
+    return np.array(cluster_function)
+
+def read_quantity(quantity,average=True):
+    'quantity per lattice'
+    quantities=[]
+    n=len(file('lat.in').readlines())-6
+    #m=int(subprocess.check_output('grep , lat.in | wc -l',shell=True))
+    for item in os.listdir(os.environ['PWD']):
+        fullpath = os.path.join(os.environ['PWD'],item)
+        if os.path.isdir(fullpath):
+            os.chdir(fullpath)
+            if os.path.isfile(quantity) and not os.path.isfile('error'):
+                if average == True:
+                    atom_number = len(file('str.out').readlines())-6
+                    site_number = (atom_number/n)
+                    quantities.append(float(subprocess.check_output('cat %s' %(quantity),shell=True))/site_number)
+                else:
+                    quantities.append(float(subprocess.check_output('cat %s' %(quantity),shell=True)))
+            os.chdir('../')
+    return np.array(quantities)
 

@@ -1,28 +1,8 @@
 #!/usr/bin/env python
 import os,subprocess,numpy,argparse,sys,subprocess
 import matplotlib.pyplot as plt
-from celib import read_clusters
+from celib import read_clusters,data_io
 
-def data_io(data,average=False):
-    'collect successfully finished results and output them to a data file'
-    lat_atom_number=len(file('lat.in').readlines())-6
-    datafile=file('%s.dat' % (data),'w')
-    datafile.write('#index\t%s-ce\t%s-vasp\n' % (data,data))
-    for item in os.listdir(os.environ['PWD']):
-        fullpath=os.path.join(os.environ['PWD'],item)
-        if os.path.isdir(fullpath):
-            os.chdir(fullpath)
-            if os.path.isfile(data) and not os.path.isfile('error'):
-                datafile.write(str(os.path.basename(fullpath))+'\t')
-                sc_atom_number=len(file('str.out').readlines())-6
-                vasp_data=float(subprocess.check_output('cat %s' %(data),shell=True))
-                if average==True:
-                    ce_data=float(subprocess.check_output('corrdump -c -mi -l=../lat.in -cf=../clusters.out -eci=../%s.ecimult' %(data),shell=True))
-                else:
-                    ce_data=(sc_atom_number/lat_atom_number)*float(subprocess.check_output('corrdump -c -l=../lat.in -cf=../clusters.out -eci=../%s.eci' %(data),shell=True))
-                datafile.write('%.5f\t%.5f\n' %(ce_data,vasp_data))
-            os.chdir('../')
-    datafile.close()
 
 def Main(ArgList):
     parser=argparse.ArgumentParser(description='Plot the results of cluster expansion for the given property and output the data file.',
@@ -39,11 +19,14 @@ def Main(ArgList):
         cv=float(subprocess.check_output('clusterexpand -e -pa -cv %s | tail -1' %(args.property),shell=True))
     else:
         cv=float(subprocess.check_output('clusterexpand -e -cv %s | tail -1' %(args.property),shell=True))
+
     #read data file
-    data_io(args.property,args.average)
-    data=numpy.loadtxt('%s.dat' % (args.property),usecols=(1,2))
-    ce_data=list(data[:,0])
-    vasp_data=list(data[:,1])
+    if not os.path.isfile('%s.dat' %(args.property)):
+        data_io(args.property,args.average)
+        
+    data=numpy.loadtxt('%s.dat' % (args.property),usecols=(2,3))
+    vasp_data=list(data[:,0])
+    ce_data=list(data[:,1])
     
     MAE=0 #Mean Absolute Error
     for i in range(len(ce_data)):
@@ -51,7 +34,7 @@ def Main(ArgList):
     MAE/=len(ce_data)
 
     #plot calculated and fitted values
-    plt.scatter(ce_data,vasp_data,c='.25',s=50)
+    plt.scatter(vasp_data,ce_data,c='.25',s=50)
 
     a=max(max(ce_data),max(vasp_data))
     b=min(min(ce_data),min(vasp_data))
@@ -63,11 +46,11 @@ def Main(ArgList):
     plt.xlim(b-d,a+d)
     plt.ylim(b-d,a+d)
     if args.name == None:
-        plt.xlabel('Fitted %s/eV' % (args.property))
-        plt.ylabel('Calculated %s/eV' % (args.property))
+        plt.xlabel('Calculated %s/eV' % (args.property))
+        plt.ylabel('Fitted %s/eV' % (args.property))
     else:
-        plt.xlabel('Fitted %s/eV' % (args.name))
-        plt.ylabel('Calculated %s/eV' % (args.name))
+        plt.xlabel('Calculated %s/eV' % (args.name))
+        plt.ylabel('Fitted %s/eV' % (args.name))
 
     if args.print_cv:
         plt.text(a-2*d,b,'CV = %.3f eV\nMAE = %.3f eV' %(cv,MAE))

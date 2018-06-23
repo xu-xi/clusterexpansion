@@ -1,8 +1,11 @@
 #!/usr/bin/env python
-import sys,re,math,commands,itertools,shutil,os,random,subprocess,sympy
+import sys,re,math,commands,itertools,shutil,os,random,subprocess,sympy,scipy
 import numpy as np
+import matplotlib.pyplot as plt
 from fractions import Fraction
 from compiler.ast import flatten
+from sklearn.model_selection import learning_curve
+
 
 _author_='Xu Xi'
 
@@ -318,7 +321,7 @@ def read_clusters(order):
 def read_cluster_number():
     'return a list whose elements are the number of clusters of increasing orders'
     subprocess.check_call('getclus > clusters.tmp',shell=True)
-    clus_data=list(loadtxt('clusters.tmp')[:,0])
+    clus_data=list(np.loadtxt('clusters.tmp')[:,0])
     os.remove('clusters.tmp')
     clus_order=set(map(int,clus_data))
     clus_number=[]
@@ -329,12 +332,12 @@ def read_cluster_number():
 def bandgap_temp(temperature,eci):
     #read data file
     try:
-        mcdata=loadtxt('mc.out')
+        mcdata=np.loadtxt('mc.out')
     except IOError,error_msg:
         print error_msg
         sys.exit(1)
 
-    noc=len(file('bandgap.ecimult').readlines()) #number of clusters
+    noc=len(eci) #number of clusters
     mc_temps=map(round,list(mcdata[:,0])) #temperatures of MC simulation
     clus_corr_funcs=mcdata[:,-noc:] #cluster correlation functions
     bandgap=list(np.dot(clus_corr_funcs,eci))
@@ -342,28 +345,36 @@ def bandgap_temp(temperature,eci):
 
 def calc_cv(cluster_function,eci,real_values):
     'per site'
-    m = len(file('lat.in').readlines())-6 
+    #m = len(file('lat.in').readlines())-6 
     cv = 0
 
     #remove linear dependent columns of the matrix of cluster functions
-    a, inds = sympy.Matrix(cluster_function).T.rref()
-    cluster_function = cluster_function[:,inds]
+    #a, inds = sympy.Matrix(cluster_function).rref()
+    #cluster_function = cluster_function[:,inds]
     #eci = eci[inds]
     #print len(eci) 
 
     G = np.dot(np.transpose(cluster_function),cluster_function) #Gramian matrix
-    print np.linalg.cond(G)
+    #print np.linalg.cond(G)
     #print np.linalg.eig(G)[0]
-    x = np.linalg.inv(G) 
+    try:
+        #x = np.linalg.inv(G)
+        #x = scipy.linalg.pinv(G)
+        x = np.linalg.pinv(G,rcond=1e-15)
+    except Exception,e:
+        print e
     predicted_values = np.dot(cluster_function,eci)
+    n = len(cluster_function)
     for i in range(n):
         cv += (((real_values[i]-predicted_values[i])/(1-np.dot(np.dot(cluster_function[i,:],x),np.transpose(cluster_function[i,:]))))**2)
-    return math.sqrt(cv/n)/m
+    #return math.sqrt(cv/n)/m
+    return math.sqrt(cv/n)
 
 def read_cluster_function():
+    #return np.loadtxt('allcorr.out')
     cluster_function=[]
     subprocess.check_call('getclus > clusters.tmp',shell=True)
-    clus_multi=list(np.loadtxt('clusters.tmp')[:,2])
+    clus_multi=np.loadtxt('clusters.tmp')[:,2]
     os.remove('clusters.tmp')
     for item in os.listdir(os.environ['PWD']):
         fullpath=os.path.join(os.environ['PWD'],item)
@@ -372,6 +383,10 @@ def read_cluster_function():
             if os.path.isfile('str.out') and not os.path.isfile('error'):
                 cluster_function.append(np.multiply(map(float,subprocess.check_output('corrdump -c -l=../lat.in -cf=../clusters.out',shell=True).split()),clus_multi))
             os.chdir('../')
+    cluster_function=np.array(cluster_function,dtype='float')
+    condition_number=np.linalg.cond(cluster_function)
+    if condition_number >= 1E15:
+        print "WARNING: The condition number of the matrix of cluster functions is too large: %.6e\n" %(np.linalg.cond(cluster_function))
     return np.array(cluster_function)
 
 def read_quantity(quantity,average=True):
@@ -392,4 +407,102 @@ def read_quantity(quantity,average=True):
                     quantities.append(float(subprocess.check_output('cat %s' %(quantity),shell=True)))
             os.chdir('../')
     return np.array(quantities)
+
+
+def data_io(data,average=False):
+    'collect successfully finished results and output them to a data file'
+    lat_atom_number=len(file('lat.in').readlines())-6
+    datafile=file('%s.dat' %(data),'w')
+    datafile.write('#index\tx\t%s-vasp\t%s-ce\n' % (data,data))
+    for item in os.listdir(os.environ['PWD']):
+        fullpath=os.path.join(os.environ['PWD'],item)
+        if os.path.isdir(fullpath):
+            os.chdir(fullpath)
+            if os.path.isfile(data) and not os.path.isfile('error'):
+                datafile.write(str(os.path.basename(fullpath))+'\t')
+                sc_x = float(subprocess.check_output('corrdump -pc -l=../lat.in',shell=True).strip().split()[-1])
+                sc_atom_number=len(file('str.out').readlines())-6
+                vasp_data=float(subprocess.check_output('cat %s' %(data),shell=True))
+                if average==True:
+                    ce_data=float(subprocess.check_output('corrdump -c -mi -l=../lat.in -cf=../clusters.out -eci=../%s.ecimult' %(data),shell=True))
+                else:
+                    ce_data=(sc_atom_number/lat_atom_number)*float(subprocess.check_output('corrdump -c -l=../lat.in -cf=../clusters.out -eci=../%s.eci' %(data),shell=True))
+                datafile.write('%.3f\t%.5f\t%.5f\n' %(sc_x,vasp_data,ce_data))
+            os.chdir('../')
+    datafile.close()
+
+
+def plot_eci(eci,filename):
+    'use matplotlib to plot eci'
+    _,a=read_clusters(2) #exclude null and point clusters
+    plt.bar(range(len(eci[a:])),eci[a:],color='C7')
+    plt.axhline(y=0,linewidth=.5,color='k')
+    plt.ylabel('ECI/eV')
+    plt.xlabel('Index of clusters')
+    plt.savefig('%s.png' %(filename))
+
+def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
+                        n_jobs=1, train_sizes=np.linspace(.1, 1.0, 5)):
+    """
+    Generate a simple plot of the test and training learning curve.
+
+    Parameters
+    ----------
+    estimator : object type that implements the "fit" and "predict" methods
+        An object of that type which is cloned for each validation.
+
+    title : string
+        Title for the chart.
+
+    X : array-like, shape (n_samples, n_features)
+        Training vector, where n_samples is the number of samples and
+        n_features is the number of features.
+
+    y : array-like, shape (n_samples) or (n_samples, n_features), optional
+        Target relative to X for classification or regression;
+        None for unsupervised learning.
+
+    ylim : tuple, shape (ymin, ymax), optional
+        Defines minimum and maximum yvalues plotted.
+
+    cv : int, cross-validation generator or an iterable, optional
+        Determines the cross-validation splitting strategy.
+        Possible inputs for cv are:
+          - None, to use the default 3-fold cross-validation,
+          - integer, to specify the number of folds.
+          - An object to be used as a cross-validation generator.
+          - An iterable yielding train/test splits.
+
+        For integer/None inputs, if ``y`` is binary or multiclass,
+        :class:`StratifiedKFold` used. If the estimator is not a classifier
+        or if ``y`` is neither binary nor multiclass, :class:`KFold` is used.
+
+        Refer :ref:`User Guide <cross_validation>` for the various
+        cross-validators that can be used here.
+
+    n_jobs : integer, optional
+        Number of jobs to run in parallel (default 1).
+    """
+    train_sizes, train_scores, test_scores = learning_curve(estimator, X, y, cv=cv, scoring='neg_mean_absolute_error',n_jobs=n_jobs, train_sizes=train_sizes)
+    train_scores_mean = -np.mean(train_scores, axis=1)
+    train_scores_std = np.std(train_scores, axis=1)
+    test_scores_mean = -np.mean(test_scores, axis=1)
+    test_scores_std = np.std(test_scores, axis=1)
+
+    output = file('lc.dat','w')
+    for i in range(len(train_sizes)):
+        output.write('%i\t%.3f\t%.3f\t%.3f\t%.3f\n' %(train_sizes[i],train_scores_mean[i],train_scores_std[i],test_scores_mean[i],test_scores_std[i]))
+    output.close()
+
+    plt.figure()
+    plt.title(title)
+    if ylim is not None:
+        plt.ylim(*ylim)
+    plt.xlabel("Training examples")
+    plt.ylabel("MAE/eV")
+    plt.grid()
+    plt.errorbar(train_sizes,train_scores_mean,yerr=train_scores_std,fmt='o--',color='C0',elinewidth=1,ecolor='C0',capsize=5,capthick=2,label='Training Score')
+    plt.errorbar(train_sizes,test_scores_mean,yerr=test_scores_std,fmt='s--',color='C3',elinewidth=1,ecolor='C3',capsize=5,capthick=2,label='Cross-validation Score')
+    plt.legend(loc="best")
+    plt.show()
 

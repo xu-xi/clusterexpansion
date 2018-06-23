@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import sys,os,itertools,shutil,argparse
-from myfunc import *
+from celib import *
 
 parser=argparse.ArgumentParser(description='GENerate all STRuctures according to translation symmetry. Following input files are needed: lat.in, str.in, clusters.out, eci.out, supercell.in',
 		formatter_class=argparse.ArgumentDefaultsHelpFormatter) 

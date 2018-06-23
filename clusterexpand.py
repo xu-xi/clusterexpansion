@@ -65,7 +65,14 @@ def random_structure_generator(lattice,supercell,index,struct_number,energy_list
             new_str_energy=float(subprocess.check_output('corrdump -c -eci=energy.eci -s=str.out',shell=True))
             if new_str_energy not in energy_list:
                 break
-    os.mkdir(str(index))
+    while 1:
+        try:
+            os.mkdir(str(index))
+        except:
+            index+=1
+        else:
+            break
+
     shutil.copy('str.out',str(index))
     os.chdir(str(index))
     subprocess.check_call("runstruct_vasp")

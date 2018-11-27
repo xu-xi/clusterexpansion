@@ -1,7 +1,8 @@
 #!/usr/bin/env python
-import os,subprocess,numpy,argparse,sys,subprocess
+import os,subprocess,numpy,argparse,sys,subprocess,math
 import matplotlib.pyplot as plt
 from celib import read_clusters,data_io
+from sklearn.metrics import mean_squared_error,mean_absolute_error 
 
 
 def Main(ArgList):
@@ -10,7 +11,6 @@ def Main(ArgList):
     parser.add_argument('-p',default='energy',dest='property',help="The property to plot")
     parser.add_argument('-n',dest='name',help="The name of the property to show on the axis")
     parser.add_argument('--pa',action='store_true',dest='average',help="The quantity is per atom already")
-    parser.add_argument('--cv',dest='print_cv',action='store_true',help="Print Cross Validation and Mean Standard Error within the plot")
     #parser.add_argument('--ft',dest='filetype',default='png',help="any filetype supported by matplotlib")
     #parser.add_argument('-t',dest='title',type=str,default='',help="add the title of the plot of ECI")
     args=parser.parse_args()
@@ -20,18 +20,20 @@ def Main(ArgList):
     else:
         cv=float(subprocess.check_output('clusterexpand -e -cv %s | tail -1' %(args.property),shell=True))
 
-    #read data file
-    if not os.path.isfile('%s.dat' %(args.property)):
-        data_io(args.property,args.average)
+    #read data file if there is one
+    #if not os.path.isfile('%s.dat' %(args.property)):
+    data_io(args.property,args.average)
         
     data=numpy.loadtxt('%s.dat' % (args.property),usecols=(2,3))
     vasp_data=list(data[:,0])
     ce_data=list(data[:,1])
     
-    MAE=0 #Mean Absolute Error
-    for i in range(len(ce_data)):
-        MAE+=abs(ce_data[i]-vasp_data[i])
-    MAE/=len(ce_data)
+    RMSD=math.sqrt(mean_squared_error(ce_data,vasp_data))
+    MAE=mean_absolute_error(ce_data,vasp_data)
+    #MAE=0 #Mean Absolute Error
+    #for i in range(len(ce_data)):
+    #    MAE+=abs(ce_data[i]-vasp_data[i])
+    #MAE/=len(ce_data)
 
     #plot calculated and fitted values
     plt.scatter(vasp_data,ce_data,c='.25',s=50)
@@ -52,11 +54,7 @@ def Main(ArgList):
         plt.xlabel('Calculated %s/eV' % (args.name))
         plt.ylabel('Fitted %s/eV' % (args.name))
 
-    if args.print_cv:
-        plt.text(a-2*d,b,'CV = %.3f eV\nMAE = %.3f eV' %(cv,MAE))
-    else:
-        print 'CV = %.4f eV' %(cv)
-        print 'MAE = %.4f eV' %(MAE)
+    plt.text(a-2*d,b,'CV = %.3f eV\nRMSD = %.3f eV' %(cv,RMSD))
     #plt.savefig('%s-ce.%s' %(args.property,args.filetype))
     plt.show()
     

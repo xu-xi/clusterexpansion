@@ -23,6 +23,14 @@ class Cluster():
             exclude+=self.get_order_cluster_number(i)
         return exclude
 
+    def get_cluster_index(self,order):
+        'get the index of clusters for the given order'
+        index=[]
+        for i in range(len(self.data)):
+            if self.data[i,0]==order:
+                index.append(i)
+        return index
+
     def get_cluster_multi(self):
         return self.data[:,2]
 
@@ -37,9 +45,19 @@ class Cluster():
     def get_cutoff_clusters(self,radius,order=6):
         'get the index of clusters within certain given cut-off radius'
         index=[]
+        clus_num_2=0
+        clus_num_3=0
+        clus_num_4=0
         for i in range(len(self.data)):
             if self.data[i,0]<=order and self.data[i,1]<=radius+0.01:
                 index.append(i)
+                if self.data[i,0]==2:
+                    clus_num_2+=1
+                elif self.data[i,0]==3:
+                    clus_num_3+=1
+                elif self.data[i,0]==4:
+                    clus_num_4+=1
+        print clus_num_2,clus_num_3,clus_num_4
         return index
 
     def get_cluster_functions(self):
@@ -64,7 +82,7 @@ class Cluster():
         return np.loadtxt('allcorr.out')
 
     def generate_candidates(self,order,radius_cutoff=float('inf')):
-        'use a hierarchical method to generate a series candidates of clusters'
+        'use a hierarchical method to generate candidates of cluster models. Clusters of the same radius are added simultaneously.'
         candidates=[]
         index=[]
         yield index
@@ -80,16 +98,16 @@ class Cluster():
     def construct_candidates(self,max_order,max_cluster_number):
         'construct candidates'
         #for i in itertools.product(self.generate_candidates(2),self.generate_candidates(3)):
-        #for i in self.generate_candidates(2):
-        index=range(self.get_exclude_cluster_number(3)) #index of null and point clusters
-        #index+=i
-        for j in self.generate_candidates(3,self.data[index[-1],1]):
-            index_3=index+j
-            for k in self.generate_candidates(4,self.data[index[-1],1]):
-                index_4=index_3+k 
-                if len(index_4)<=max_cluster_number:
-                    #print index_4
-                    yield index_4
+        index=range(self.get_exclude_cluster_number(2)) #index of null and point clusters
+        for i in self.generate_candidates(2):
+            index_2=index+i
+            for j in self.generate_candidates(3,self.data[index_2[-1],1]):
+                index_3=index_2+j
+                for k in self.generate_candidates(4,self.data[index_3[-1],1]):
+                    index_4=index_3+k 
+                    if len(index_4)<=max_cluster_number:
+                        #print index_4
+                        yield index_4
             #index=[0,1,2]
             #index=list(np.array(i).flatten())
             #index+=i
@@ -103,8 +121,12 @@ class Eci(Cluster):
     def init(self,name):
         self.eci=np.loadtxt('%s.eci' %(name))
 
+
 #cluster=Cluster()
-#a=cluster.get_cluster_radius()
-#print a
+#a=cluster.generate_candidates(2)
+#for i in a:
+#    print i
 #models=cluster.construct_candidates(5,80)
+#for j in models:
+#    print j
 #two_body_2=cluster.generate_candidates(2)

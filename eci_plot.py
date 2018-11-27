@@ -61,7 +61,7 @@ def Main(ArgList):
             for i in new_cluster_number(cluster_number):
                 plt.axvline(x=i+0.5,linestyle='dashed',linewidth=.5,c='k')
             plt.xlim(xmin=0.5)
-            plt.xticks(range(1,len(eci),len(eci)/5))
+            #plt.xticks(range(1,len(eci),len(eci)/5))
         else:
             eci=list(numpy.loadtxt('%s' %(args.ecifile)))
             cluster_number,cluster_exclude=read_clusters(2)

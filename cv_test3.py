@@ -4,13 +4,13 @@ from cluster import Cluster
 from celib import calc_cv,read_cluster_function,read_quantity
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split,ShuffleSplit,KFold
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_squared_error
 from sklearn import linear_model
-import argparse
+import argparse,math
 
-parser=argparse.ArgumentParser(description='Cluster model selection',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser=argparse.ArgumentParser(description='Cluster model selection. Null and point clusters are alway included. Scan two-body clusters first, the two-body cluster model with the smallest LOOCV is selected. Then three-body clustes are taken into consideration. Likewise, the model with the smallest LOOCV is selected. If it is larger than that of the two-body cluster model, then three-body clusters should not be added, else the similar procedure is performed for four-body clusters. K-fold CV is used to evaluate different models.\n Note: Before using this script, generate a large cluster pool for candidates by ATAT command \'corrdump\'.',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('-p',default='energy',dest='property',help="The property to expand")
-parser.add_argument('-n',type=int,default=10,dest='times',help="The averaging times")
+parser.add_argument('-k',type=int,default=10,dest='kfold',help="The k fold cross validation")
 parser.add_argument('-t',type=str,default='',dest='title',help="The title of the plot")
 args=parser.parse_args()
 
@@ -18,22 +18,21 @@ cluster_function=read_cluster_function()
 quantity=np.loadtxt('all%s.out' %(args.property))
 cluster=Cluster()
 
-radius_cutoff=cluster.get_cluster_radius()
-
-data=KFold(n_splits=10)
-#data=ShuffleSplit(n_splits=args.times, train_size=120, test_size=30, random_state=None)
-#X_train,X_test,y_train,y_test=train_test_split(cluster_function,quantity,train_size=120,test_size=40)
-#models=cluster.construct_candidates(4,100)
+data=KFold(n_splits=args.kfold)
 
 model_size=[]
-output=file('cv_test3_%s.dat' %(args.property),'w')
+#output=file('cv_test3_%s.dat' %(args.property),'w')
+#output.write('#Number\tRadius\tLOOCV_min\tLOOCV_std\tTrain_mean\tTrain_std\tTest_mean\tTest_std\n')
 
-for i in radius_cutoff:
-    model=cluster.get_cutoff_clusters(i)
-    print i
-    print model
-    cv_list=np.array([])
-    MAE_list=np.array([])
+initial_model=range(cluster.get_exclude_cluster_number(2)) #index of null and point clusters
+print initial_model
+for i in cluster.generate_candidates(2):
+    model=initial_model+i
+    #print 'Cut-off radius of clusters: %.3f' %(i) 
+    print 'Index of clusters:\n',model
+    print '\n'
+    loocv_list=np.array([])
+    train_list=np.array([])
     test_list=np.array([])
     model_size.append(len(model))
     
@@ -51,9 +50,9 @@ for i in radius_cutoff:
 
             #u,s,vh=np.linalg.svd(X_train[:,model])
 
-            cv=calc_cv(X_train[:,model],eci,y_train)
-            MAE=mean_absolute_error(np.dot(X_train[:,model],eci),y_train)
-            test_error=mean_absolute_error(np.dot(X_test[:,model],eci),y_test)
+            loocv=calc_cv(X_train[:,model],eci,y_train)
+            train_error=math.sqrt(mean_squared_error(np.dot(X_train[:,model],eci),y_train))
+            test_error=math.sqrt(mean_squared_error(np.dot(X_test[:,model],eci),y_test))
 
             #print 'Number of cluster:',len(eci)
             #print 'ECI:',eci
@@ -62,19 +61,19 @@ for i in radius_cutoff:
             #print 'Singular Values:',s
             #print '\n'
 
-            cv_list=np.append(cv_list,cv)
-            MAE_list=np.append(MAE_list,MAE)
+            loocv_list=np.append(loocv_list,loocv)
+            train_list=np.append(train_list,train_error)
             test_list=np.append(test_list,test_error)
 
-    e1=plt.errorbar(len(model),cv_list.mean(),yerr=cv_list.std(),fmt='s',color='C0',elinewidth=1,ecolor='C0',capsize=5,capthick=1)
-    e2=plt.errorbar(len(model),MAE_list.mean(),yerr=MAE_list.std(),fmt='s',color='C1',elinewidth=1,ecolor='C1',capsize=5,capthick=1)
+    e1=plt.errorbar(len(model),loocv_list.mean(),yerr=loocv_list.std(),fmt='s',color='C0',elinewidth=1,ecolor='C0',capsize=5,capthick=1)
+    e2=plt.errorbar(len(model),train_list.mean(),yerr=train_list.std(),fmt='s',color='C1',elinewidth=1,ecolor='C1',capsize=5,capthick=1)
     e3=plt.errorbar(len(model),test_list.mean(),yerr=test_list.std(),fmt='s',color='C7',elinewidth=1,ecolor='C7',capsize=5,capthick=1)
-    output.write('%i\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\n' %(len(model),cv_list.mean(),cv_list.std(),MAE_list.mean(),MAE_list.std(),test_list.mean(),test_list.std()))
+    #output.write('%i\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\n' %(len(model),i,loocv_list.mean(),loocv_list.std(),train_list.mean(),train_list.std(),test_list.mean(),test_list.std()))
 
-output.close()
+#output.close()
 
 plt.xlabel('Number of Clusters')
-plt.ylabel('CV/eV')
+plt.ylabel('RMSD/eV')
 plt.legend((e1,e2,e3),('LOOCV','Training Score','Test Score'),loc='best',fontsize=12)
 plt.title('%s-%s' %(args.title,args.property))
 plt.show()

@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from fractions import Fraction
 from compiler.ast import flatten
 from sklearn.model_selection import learning_curve
+from sklearn.metrics import mean_squared_error
 
 
 _author_='Xu Xi'
@@ -210,7 +211,7 @@ def enumer_test(alist):
 def getbandgap():
 	'return a dictionary whose keys are index and values are bandgaps'
 	bandgap={}
-	rootdir=os.environ['PWD']
+	rootdir=os.getcwd()
         filelist=os.listdir(rootdir)
         for ifile in filelist:
 		fullpath=os.path.join(rootdir,ifile)
@@ -340,6 +341,7 @@ def bandgap_temp(temperature,eci):
     noc=len(eci) #number of clusters
     mc_temps=map(round,list(mcdata[:,0])) #temperatures of MC simulation
     clus_corr_funcs=mcdata[:,-noc:] #cluster correlation functions
+    #print clus_corr_funcs
     bandgap=list(np.dot(clus_corr_funcs,eci))
     return bandgap[mc_temps.index(temperature)]
 
@@ -376,9 +378,10 @@ def read_cluster_function():
     subprocess.check_call('getclus > clusters.tmp',shell=True)
     clus_multi=np.loadtxt('clusters.tmp')[:,2]
     os.remove('clusters.tmp')
-    for item in os.listdir(os.environ['PWD']):
-        fullpath=os.path.join(os.environ['PWD'],item)
+    for item in os.listdir(os.getcwd()):
+        fullpath=os.path.join(os.getcwd(),item)
         if os.path.isdir(fullpath):
+            #print fullpath
             os.chdir(fullpath)
             if os.path.isfile('str.out') and not os.path.isfile('error'):
                 cluster_function.append(np.multiply(map(float,subprocess.check_output('corrdump -c -l=../lat.in -cf=../clusters.out',shell=True).split()),clus_multi))
@@ -394,8 +397,8 @@ def read_quantity(quantity,average=True):
     quantities=[]
     n=len(file('lat.in').readlines())-6
     #m=int(subprocess.check_output('grep , lat.in | wc -l',shell=True))
-    for item in os.listdir(os.environ['PWD']):
-        fullpath = os.path.join(os.environ['PWD'],item)
+    for item in os.listdir(os.getcwd()):
+        fullpath = os.path.join(os.getcwd(),item)
         if os.path.isdir(fullpath):
             os.chdir(fullpath)
             if os.path.isfile(quantity) and not os.path.isfile('error'):
@@ -414,19 +417,20 @@ def data_io(data,average=False):
     lat_atom_number=len(file('lat.in').readlines())-6
     datafile=file('%s.dat' %(data),'w')
     datafile.write('#index\tx\t%s-vasp\t%s-ce\n' % (data,data))
-    for item in os.listdir(os.environ['PWD']):
-        fullpath=os.path.join(os.environ['PWD'],item)
+    for item in os.listdir(os.getcwd()):
+        fullpath=os.path.join(os.getcwd(),item)
         if os.path.isdir(fullpath):
             os.chdir(fullpath)
             if os.path.isfile(data) and not os.path.isfile('error'):
                 datafile.write(str(os.path.basename(fullpath))+'\t')
                 sc_x = float(subprocess.check_output('corrdump -pc -l=../lat.in',shell=True).strip().split()[-1])
                 sc_atom_number=len(file('str.out').readlines())-6
-                vasp_data=float(subprocess.check_output('cat %s' %(data),shell=True))
+                ce_data=float(subprocess.check_output('corrdump -c -l=../lat.in -cf=../clusters.out -eci=../%s.eci' %(data),shell=True))
                 if average==True:
-                    ce_data=float(subprocess.check_output('corrdump -c -mi -l=../lat.in -cf=../clusters.out -eci=../%s.ecimult' %(data),shell=True))
+                    vasp_data=float(subprocess.check_output('cat %s' %(data),shell=True))
                 else:
-                    ce_data=(sc_atom_number/lat_atom_number)*float(subprocess.check_output('corrdump -c -l=../lat.in -cf=../clusters.out -eci=../%s.eci' %(data),shell=True))
+                    vasp_data=float(subprocess.check_output('cat %s' %(data),shell=True))*lat_atom_number/sc_atom_number
+                    #ce_data=(sc_atom_number/lat_atom_number)*float(subprocess.check_output('corrdump -c -l=../lat.in -cf=../clusters.out -eci=../%s.eci' %(data),shell=True))
                 datafile.write('%.3f\t%.5f\t%.5f\n' %(sc_x,vasp_data,ce_data))
             os.chdir('../')
     datafile.close()
@@ -440,6 +444,21 @@ def plot_eci(eci,filename):
     plt.ylabel('ECI/eV')
     plt.xlabel('Index of clusters')
     plt.savefig('%s.png' %(filename))
+
+def plot_fit(y1,y2,cv,error):
+
+    plt.scatter(y1,y2)
+    a=max(max(y1),max(y2))
+    b=min(min(y1),min(y2))
+    d=(a-b)*0.2
+
+    x=np.linspace(b-d,a+d,100)
+    plt.plot(x,x,linestyle='dashed',linewidth=.5,c='k')
+
+    plt.xlim(b-d,a+d)
+    plt.ylim(b-d,a+d)
+
+    plt.text(a-2*d,b,'CV = %.3f eV\nRMSD = %.3f eV' %(cv,error))
 
 def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
                         n_jobs=1, train_sizes=np.linspace(.1, 1.0, 5)):
@@ -506,3 +525,8 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
     plt.legend(loc="best")
     plt.show()
 
+def BIC(cluster_function,ECI,y):
+    'calculate the Bayesian Information Criterion of a linear model of cluster expansion'
+    n,k=cluster_function.shape #number of samples(structures) and parameters(clusters)
+    MSE=mean_squared_error(y,np.dot(cluster_function,ECI))
+    return n*math.log(MSE)+k*math.log(n)

@@ -3,14 +3,15 @@ import numpy as np
 from cluster import Cluster
 from celib import calc_cv,read_cluster_function,read_quantity
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split,ShuffleSplit,KFold
+from sklearn.model_selection import train_test_split,ShuffleSplit,RepeatedKFold
 from sklearn.metrics import mean_squared_error
 from sklearn import linear_model
 import argparse,math
 
 parser=argparse.ArgumentParser(description='Cluster model selection. Increase cluster radius gradually, and clusters (up to 4-body) within the cut-off radius are added into models. K-fold CV is used to evaluate different models.\n Note: Before using this script, generate a large cluster pool for candidates by ATAT command \'corrdump\'.',formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('-p',default='energy',dest='property',help="The property to expand")
-parser.add_argument('-k',type=int,default=10,dest='kfold',help="The k fold cross validation")
+parser.add_argument('-k',type=int,default=10,dest='kfold',help="Number of folds. Must be at least 2.")
+parser.add_argument('-n',type=int,default=10,dest='repeated',help="Number of times cross-validator needs to be repeated.")
 parser.add_argument('-t',type=str,default='',dest='title',help="The title of the plot")
 args=parser.parse_args()
 
@@ -20,7 +21,7 @@ cluster=Cluster()
 
 radius_cutoff=cluster.get_cluster_radius()
 
-data=KFold(n_splits=args.kfold)
+data=RepeatedKFold(n_splits=args.kfold,n_repeats=args.repeated)
 #data=ShuffleSplit(n_splits=args.times, train_size=120, test_size=30, random_state=None)
 #X_train,X_test,y_train,y_test=train_test_split(cluster_function,quantity,train_size=120,test_size=40)
 #models=cluster.construct_candidates(4,100)
@@ -68,14 +69,15 @@ for i in radius_cutoff:
             train_list=np.append(train_list,train_error)
             test_list=np.append(test_list,test_error)
 
-    e1=plt.errorbar(len(model),loocv_list.mean(),yerr=loocv_list.std(),fmt='s',color='C0',elinewidth=1,ecolor='C0',capsize=5,capthick=1)
-    e2=plt.errorbar(len(model),train_list.mean(),yerr=train_list.std(),fmt='s',color='C1',elinewidth=1,ecolor='C1',capsize=5,capthick=1)
-    e3=plt.errorbar(len(model),test_list.mean(),yerr=test_list.std(),fmt='s',color='C7',elinewidth=1,ecolor='C7',capsize=5,capthick=1)
+    e1=plt.errorbar(i,loocv_list.mean(),yerr=loocv_list.std(),fmt='s',color='C0',elinewidth=1,ecolor='C0',capsize=5,capthick=1)
+    e2=plt.errorbar(i,train_list.mean(),yerr=train_list.std(),fmt='s',color='C1',elinewidth=1,ecolor='C1',capsize=5,capthick=1)
+    e3=plt.errorbar(i,test_list.mean(),yerr=test_list.std(),fmt='s',color='C7',elinewidth=1,ecolor='C7',capsize=5,capthick=1)
     output.write('%i\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\n' %(len(model),i,loocv_list.mean(),loocv_list.std(),train_list.mean(),train_list.std(),test_list.mean(),test_list.std()))
 
 output.close()
 
-plt.xlabel('Number of Clusters')
+#plt.xlabel('Number of Clusters')
+plt.xlabel('Radius of Clusters')
 plt.ylabel('RMSD/eV')
 plt.legend((e1,e2,e3),('LOOCV','Training Score','Test Score'),loc='best',fontsize=12)
 plt.title('%s-%s' %(args.title,args.property))

@@ -44,7 +44,8 @@ def Main(Arglist):
     else:
         plt.xlim(args.temp0,max(mc_temps))
     plt.legend(fontsize=12)
-    plt.savefig('bg-mc.%s' % (args.filetype))
+    #plt.savefig('bg-mc.%s' % (args.filetype))
+    plt.show()
 
 if __name__ =="__main__":
     Main(sys.argv)

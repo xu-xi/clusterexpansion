@@ -1,42 +1,48 @@
 #!/usr/bin/env python
-import math
+import math,argparse,subprocess
 import numpy as np
 import matplotlib.pyplot as plt
 from cluster import Cluster
 from celib import BIC,read_cluster_function
 
-cluster=Cluster()
+parser = argparse.ArgumentParser(description='Calculate and plot BIC for different cluster expansion models. Models are constructed hierarchically according to cluster radius.',
+                formatter_class = argparse.ArgumentDefaultsHelpFormatter) 
+#parser.add_argument('-p',default='energy',dest='property',help="The property to expand")
+args = parser.parse_args()
 
-cluster_function=read_cluster_function()
-str_num,clus_num=cluster_function.shape
+#subprocess.check_call('clusterexpand -e energy',shell=True)
 
-energy=np.loadtxt('allenergy.out')
-mbj=np.loadtxt('allmbj.out')
+cluster = Cluster()
+cluster_function = read_cluster_function()
+str_num,clus_num = cluster_function.shape
 
-models=cluster.construct_candidates(4,100)
+y = np.loadtxt('allenergy.out')
 
-BIC_energy=[]
-BIC_mbj=[]
-parameter_num=[]
+models = cluster.construct_candidates(4,100) #cluster order & max cluster number
+
+bic_set = []
+parameter_num = []
+
+#ECI = np.linalg.lstsq(cluster_function[:,:2],y,rcond=None)[0]
+#min_bic = BIC(cluster_function[:,:2],ECI,y)
+min_bic = 0
 
 for model in models:
-    ECI_energy=np.linalg.lstsq(cluster_function[:,model],energy,rcond=None)[0]
-    ECI_mbj=np.linalg.lstsq(cluster_function[:,model],mbj,rcond=None)[0]
-    parameter_num.append(len(ECI_energy))
-    print model
-    BIC_energy.append(BIC(cluster_function[:,model],ECI_energy,energy))
-    BIC_mbj.append(BIC(cluster_function[:,model],ECI_mbj,mbj))
-    #pd_energy.append(math.exp(-0.5*BIC(cluster_function[:,model],ECI_energy,energy))) #approximated posterior probability for CE model
-    #pd_mbj.append(math.exp(-0.5*BIC(cluster_function[:,model],ECI_mbj,mbj)))
+    ECI = np.linalg.lstsq(cluster_function[:,model],y,rcond=None)[0]
+    parameter_num.append(len(ECI))
+    bic = BIC(cluster_function[:,model],ECI,y)
+    print model,bic
+    bic_set.append(bic)
+    if bic < min_bic:
+        best_model = model
+        min_bic = bic
 
-#print pd_mbj
+#print best_model
+print parameter_num[bic_set.index(min(bic_set))],min_bic
 
-#plt.plot(parameter_num,pd_energy/sum(pd_energy))
-plt.plot(parameter_num,BIC_energy,'o--')
-plt.xlabel('Number of Clusters')
-plt.ylabel('BIC')
-plt.show()
-plt.plot(parameter_num,BIC_mbj,'o--')
+plt.plot(parameter_num,bic_set,'o--',ms=12,fillstyle='none')
+plt.plot(parameter_num[bic_set.index(min(bic_set))],min_bic,'o',ms=12,color='red',label='The optimal model')
+plt.legend(loc=0)
 plt.xlabel('Number of Clusters')
 plt.ylabel('BIC')
 plt.show()

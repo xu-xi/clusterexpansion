@@ -85,7 +85,7 @@ class Cluster():
         'use a hierarchical method to generate candidates of cluster models. Clusters of the same radius are added simultaneously.'
         candidates=[]
         index=[]
-        yield index
+        yield index #the empty 
         for i in range(len(self.data)):
             if self.data[i,0]==order and self.data[i,1]<=radius_cutoff:
                 if i not in index:

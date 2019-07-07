@@ -75,10 +75,15 @@ def Main(ArgList):
         #plt.xticks(numpy.arange(1,len(eci)))
         #plt.xticks([0,1,2,10,13],['null','point','pair','trip','quad'])
     else:
+        datafile = file('teci.dat','w')
         for i in range(len(args.temp)):
             eci=eci_at_certain_temperature(args.ecifile,args.temp[i])[clus_exclude:]
+            for j in range(len(eci)):
+                datafile.write('%.6f\n' %(eci[j]))
             plt.plot(numpy.arange(1,len(eci)+1),eci,'o--',linewidth=1,label='T=%sK' %(args.temp[i]))
             plt.legend(loc=0,fontsize=10)
+            datafile.write('\n')
+        datafile.close()
 
     plt.axhline(y=0,linewidth=.5,c='k')
     plt.xlabel('Index of clusters')

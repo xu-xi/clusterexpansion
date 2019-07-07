@@ -72,7 +72,6 @@ def Main(ArgList):
     parser.add_argument('-f',type=str,default='POSCAR.static',dest='strfile',help="The structure file to read")
     parser.add_argument('-p',type=str,default='energy',dest='property',help="The property to expand")
     parser.add_argument('-k',type=int,default=None,dest='knum',help="The number of k points")
-    parser.add_argument('-b',type=str,default=None,dest='B',help="The B atom")
     args=parser.parse_args()
 
     rce = Reciprocal_Space_Cluster_Expansion()

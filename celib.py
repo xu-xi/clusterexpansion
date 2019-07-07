@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys,re,math,commands,itertools,shutil,os,random,subprocess,sympy,scipy
+import sys,re,math,commands,itertools,shutil,os,random,subprocess,scipy
 import numpy as np
 import matplotlib.pyplot as plt
 from fractions import Fraction
@@ -18,7 +18,7 @@ def listwrite(afile,alist):
 		afile.write('\n')
 
 def projection(vector,basis):
-	'return a list of the coefficients of a vector on a basis set'
+	'return a list of the coefficients of a vector on a basis'
 	return list(np.dot(np.linalg.inv(np.transpose(basis)),vector))
 
 def translation(site,platvect,slatvect):
@@ -370,7 +370,7 @@ def calc_cv(cluster_function,eci,real_values):
     for i in range(n):
         cv += (((real_values[i]-predicted_values[i])/(1-np.dot(np.dot(cluster_function[i,:],x),np.transpose(cluster_function[i,:]))))**2)
     #return math.sqrt(cv/n)/m
-    return math.sqrt(cv/n)
+    return round(math.sqrt(cv/n),6)
 
 def read_cluster_function():
     #return np.loadtxt('allcorr.out')
@@ -413,7 +413,7 @@ def read_quantity(quantity,average=True):
 
 
 def data_io(data,average=False):
-    'collect successfully finished results and output them to a data file'
+    'collect successfully finished results and output them to a data file (unit in per atom)'
     lat_atom_number=len(file('lat.in').readlines())-6
     datafile=file('%s.dat' %(data),'w')
     datafile.write('#index\tx\t%s-vasp\t%s-ce\n' % (data,data))
@@ -423,13 +423,13 @@ def data_io(data,average=False):
             os.chdir(fullpath)
             if os.path.isfile(data) and not os.path.isfile('error'):
                 datafile.write(str(os.path.basename(fullpath))+'\t')
-                sc_x = float(subprocess.check_output('corrdump -pc -l=../lat.in',shell=True).strip().split()[-1])
+                sc_x = float(subprocess.check_output('corrdump -pc -l=../lat.in',shell=True).strip().split()[-2]) #need debug 
                 sc_atom_number=len(file('str.out').readlines())-6
-                ce_data=float(subprocess.check_output('corrdump -c -l=../lat.in -cf=../clusters.out -eci=../%s.eci' %(data),shell=True))
+                ce_data=float(subprocess.check_output('corrdump -c -l=../lat.in -cf=../clusters.out -eci=../%s.eci' %(data),shell=True))/lat_atom_number
                 if average==True:
                     vasp_data=float(subprocess.check_output('cat %s' %(data),shell=True))
                 else:
-                    vasp_data=float(subprocess.check_output('cat %s' %(data),shell=True))*lat_atom_number/sc_atom_number
+                    vasp_data=float(subprocess.check_output('cat %s' %(data),shell=True))/sc_atom_number
                     #ce_data=(sc_atom_number/lat_atom_number)*float(subprocess.check_output('corrdump -c -l=../lat.in -cf=../clusters.out -eci=../%s.eci' %(data),shell=True))
                 datafile.write('%.3f\t%.5f\t%.5f\n' %(sc_x,vasp_data,ce_data))
             os.chdir('../')
@@ -460,73 +460,62 @@ def plot_fit(y1,y2,cv,error):
 
     plt.text(a-2*d,b,'CV = %.3f eV\nRMSD = %.3f eV' %(cv,error))
 
-def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
-                        n_jobs=1, train_sizes=np.linspace(.1, 1.0, 5)):
-    """
-    Generate a simple plot of the test and training learning curve.
+def plot_fit2(y1,y2):
 
-    Parameters
-    ----------
-    estimator : object type that implements the "fit" and "predict" methods
-        An object of that type which is cloned for each validation.
+    plt.scatter(y1,y2)
+    a=max(max(y1),max(y2))
+    b=min(min(y1),min(y2))
+    d=(a-b)*0.2
 
-    title : string
-        Title for the chart.
+    x=np.linspace(b-d,a+d,100)
+    plt.plot(x,x,linestyle='dashed',linewidth=.5,c='k')
 
-    X : array-like, shape (n_samples, n_features)
-        Training vector, where n_samples is the number of samples and
-        n_features is the number of features.
+    plt.xlim(b-d,a+d)
+    plt.ylim(b-d,a+d)
 
-    y : array-like, shape (n_samples) or (n_samples, n_features), optional
-        Target relative to X for classification or regression;
-        None for unsupervised learning.
+    rmsd = math.sqrt(mean_squared_error(y1,y2))
+    plt.text(a-2*d,b,'RMSD = %.3f eV' %(rmsd))
 
-    ylim : tuple, shape (ymin, ymax), optional
-        Defines minimum and maximum yvalues plotted.
+def plot_learning_curve(estimator, X, y, ylim=None, cv=None,
+                        n_jobs=1, train_sizes=[0.33, 0.55, 0.78, 1.]):
+    'Generate a simple plot of the test and training learning curve.'
 
-    cv : int, cross-validation generator or an iterable, optional
-        Determines the cross-validation splitting strategy.
-        Possible inputs for cv are:
-          - None, to use the default 3-fold cross-validation,
-          - integer, to specify the number of folds.
-          - An object to be used as a cross-validation generator.
-          - An iterable yielding train/test splits.
+    train_sizes, train_scores, test_scores = learning_curve(estimator, X, y, cv=cv, scoring='neg_mean_squared_error',n_jobs=n_jobs, train_sizes=train_sizes)
+    #train_sizes, train_scores, test_scores = learning_curve(estimator, X, y, cv=cv, scoring='neg_mean_absolute_error',n_jobs=n_jobs, train_sizes=train_sizes, shuffle=True, verbose=1)
 
-        For integer/None inputs, if ``y`` is binary or multiclass,
-        :class:`StratifiedKFold` used. If the estimator is not a classifier
-        or if ``y`` is neither binary nor multiclass, :class:`KFold` is used.
+    train_scores = [[math.sqrt(-x) for x in y] for y in train_scores]
+    test_scores = [[math.sqrt(-x) for x in y] for y in test_scores]
 
-        Refer :ref:`User Guide <cross_validation>` for the various
-        cross-validators that can be used here.
+    print 'Train Score:\n',train_scores
+    print 'Test Score:\n',test_scores
 
-    n_jobs : integer, optional
-        Number of jobs to run in parallel (default 1).
-    """
-    train_sizes, train_scores, test_scores = learning_curve(estimator, X, y, cv=cv, scoring='neg_mean_absolute_error',n_jobs=n_jobs, train_sizes=train_sizes)
-    train_scores_mean = -np.mean(train_scores, axis=1)
+    #train_scores_mean = map(lambda x: math.sqrt(x),-np.mean(train_scores, axis=1))
+    train_scores_mean = np.mean(train_scores, axis=1)
+    #train_scores_std = map(lambda x:math.sqrt(x),np.std(train_scores, axis=1))
     train_scores_std = np.std(train_scores, axis=1)
-    test_scores_mean = -np.mean(test_scores, axis=1)
+    #test_scores_mean = map(lambda x:math.sqrt(x),-np.mean(test_scores, axis=1))
+    test_scores_mean = np.mean(test_scores, axis=1)
+    #test_scores_std = map(lambda x:math.sqrt(x),np.std(test_scores, axis=1))
     test_scores_std = np.std(test_scores, axis=1)
 
     output = file('lc.dat','w')
     for i in range(len(train_sizes)):
-        output.write('%i\t%.3f\t%.3f\t%.3f\t%.3f\n' %(train_sizes[i],train_scores_mean[i],train_scores_std[i],test_scores_mean[i],test_scores_std[i]))
+        output.write('%i\t%.5f\t%.5f\t%.5f\t%.5f\n' %(train_sizes[i],train_scores_mean[i],train_scores_std[i],test_scores_mean[i],test_scores_std[i]))
     output.close()
 
     plt.figure()
-    plt.title(title)
     if ylim is not None:
         plt.ylim(*ylim)
-    plt.xlabel("Training examples")
-    plt.ylabel("MAE/eV")
+    plt.xlabel("The Size of Training Set")
+    plt.ylabel("RMSE/eV")
     plt.grid()
     plt.errorbar(train_sizes,train_scores_mean,yerr=train_scores_std,fmt='o--',color='C0',elinewidth=1,ecolor='C0',capsize=5,capthick=2,label='Training Score')
-    plt.errorbar(train_sizes,test_scores_mean,yerr=test_scores_std,fmt='s--',color='C3',elinewidth=1,ecolor='C3',capsize=5,capthick=2,label='Cross-validation Score')
+    plt.errorbar(train_sizes,test_scores_mean,yerr=test_scores_std,fmt='s--',color='C3',elinewidth=1,ecolor='C3',capsize=5,capthick=2,label='Test Score')
     plt.legend(loc="best")
     plt.show()
 
 def BIC(cluster_function,ECI,y):
     'calculate the Bayesian Information Criterion of a linear model of cluster expansion'
-    n,k=cluster_function.shape #number of samples(structures) and parameters(clusters)
-    MSE=mean_squared_error(y,np.dot(cluster_function,ECI))
-    return n*math.log(MSE)+k*math.log(n)
+    n,k = cluster_function.shape #the number of samples(structures) and parameters(clusters)
+    MSE = mean_squared_error(y,np.dot(cluster_function,ECI))
+    return n*math.log(MSE) + k*math.log(n)

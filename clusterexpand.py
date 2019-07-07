@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import argparse,sys,os,shutil,subprocess,random,copy,numpy,socket
+import argparse,sys,os,shutil,subprocess,random,copy,numpy,socket,ase.io
 from celib import initstr,occupy,ce_energy
 from clusters_opt import clusters_optimizer
 
@@ -10,20 +10,22 @@ def vasp_no_error(index):
         if subprocess.call('grep required vasp.out.relax',shell=True)!=0:
             os.mknod('error')
             sys.stderr.write('ERROR in %s, check the output' % (index))
+            os.chdir('../')
             return 0
     elif os.path.isfile('vasp.out.static'):
         if subprocess.call('grep required vasp.out.static',shell=True)!=0:
             os.mknod('error')
             sys.stderr.write('ERROR in %s, check the output' % (index))
+            os.chdir('../')
             return 0
     elif os.path.isfile('vasp.out'):
         if subprocess.call('grep required vasp.out',shell=True)!=0:
             os.mknod('error')
             sys.stderr.write('ERROR in %s, check the output' % (index))
+            os.chdir('../')
             return 0
     else:
         return 0
-    os.chdir('../')
 
 def generate_wien2k_machines(processor_number=4):
     'generate .machines file for wien2k'
@@ -42,10 +44,11 @@ def run_wien2k_scf():
     os.mkdir('scf')
     shutil.copy('CONTCAR.static','./scf/scf')
     os.chdir('./scf')
-    subprocess.check_call('py_conv -f scf -i vasp -o w2k > /dev/null',shell=True)
+    structure = ase.io.read('CONTCAR.static',format='vasp')
+    ase.io.write('scf.struct',structure,format='struct') 
     generate_wien2k_machines()
-    subprocess.check_call('x sgroup',shell=True)
-    shutil.copy('scf.struct_sgroup','scf.struct')
+    #subprocess.check_call('x sgroup',shell=True)
+    #shutil.copy('scf.struct_sgroup','scf.struct')
     subprocess.check_call('init_lapw -b -ecut -8.0 -numk 100',shell=True)
     subprocess.check_call('run_lapw -p -ec 0.00001',shell=True)
     subprocess.check_call('w2k_save -d mbj',shell=True)
@@ -97,14 +100,14 @@ def Main(ArgList):
     index_number=0
     struct_number=0
     #scan current directory to collect finished calculation
-    for item in os.listdir(os.environ['PWD']):
-        fullpath=os.path.join(os.environ['PWD'],item)
+    for item in os.listdir(os.getcwd()):
+        fullpath=os.path.join(os.getcwd(),item)
         if os.path.isdir(fullpath):
             index_number+=1
             os.chdir(fullpath)
             if os.path.isfile('energy') and not os.path.isfile('error'):
                 struct_number+=1
-                os.chdir('../')
+            os.chdir('../')
 
     #just optimize the choice of clusters and do not construct cluster expansion
     #if args.opt_only==True:
@@ -164,7 +167,7 @@ def Main(ArgList):
         if vasp_no_error(index_number)!=0:
             struct_number+=1
         #cv=clusters_optimizer(args.property,struct_number-1,args.step)
-        cv=float(subprocess.check_output("clusterexpand -e -cv %s | tail -1" % (args.property),shell=True))
+        cv=float(subprocess.check_output("clusterexpand -e -cv %s | tail -1" %(args.property),shell=True))
         energy_list=numpy.loadtxt('allenergy.out').tolist()
         celog.write(subprocess.check_output("date"))
         celog.write('Cycle %s CV: %s\n' % (struct_number,cv))
@@ -174,7 +177,7 @@ def Main(ArgList):
             os.remove('stop')
             break
         if args.number!=None:
-            if index>=args.number:
+            if index_number>=args.number:
                 celog.close()
                 break
 		

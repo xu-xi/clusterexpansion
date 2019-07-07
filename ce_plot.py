@@ -11,7 +11,6 @@ def Main(ArgList):
     parser.add_argument('-p',default='energy',dest='property',help="The property to plot")
     parser.add_argument('-n',dest='name',help="The name of the property to show on the axis")
     parser.add_argument('--pa',action='store_true',dest='average',help="The quantity is per atom already")
-    #parser.add_argument('--ft',dest='filetype',default='png',help="any filetype supported by matplotlib")
     #parser.add_argument('-t',dest='title',type=str,default='',help="add the title of the plot of ECI")
     args=parser.parse_args()
 
@@ -54,7 +53,7 @@ def Main(ArgList):
         plt.xlabel('Calculated %s/eV' % (args.name))
         plt.ylabel('Fitted %s/eV' % (args.name))
 
-    plt.text(a-2*d,b,'CV = %.3f eV\nRMSD = %.3f eV' %(cv,RMSD))
+    plt.text(a-2*d,b,'CV = %.4f eV\nRMSD = %.4f eV' %(cv,RMSD))
     #plt.savefig('%s-ce.%s' %(args.property,args.filetype))
     plt.show()
     

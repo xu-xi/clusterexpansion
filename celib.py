@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys,re,math,commands,itertools,shutil,os,random,subprocess,scipy
+import sys,re,math,commands,itertools,shutil,os,random,subprocess
 import numpy as np
 import matplotlib.pyplot as plt
 from fractions import Fraction
@@ -486,8 +486,8 @@ def plot_learning_curve(estimator, X, y, ylim=None, cv=None,
     train_scores = [[math.sqrt(-x) for x in y] for y in train_scores]
     test_scores = [[math.sqrt(-x) for x in y] for y in test_scores]
 
-    print 'Train Score:\n',train_scores
-    print 'Test Score:\n',test_scores
+    #print 'Train Score:\n',train_scores
+    #print 'Test Score:\n',test_scores
 
     #train_scores_mean = map(lambda x: math.sqrt(x),-np.mean(train_scores, axis=1))
     train_scores_mean = np.mean(train_scores, axis=1)

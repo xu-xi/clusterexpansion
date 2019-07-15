@@ -2,6 +2,7 @@
 Requirements
 -----
 -----
-* Alloy Theoretical Automated Toolkit (ATAT) 
+* Alloy Theoretical Automated Toolkit (ATAT)
 * Numpy
 * Scikit-learn
+* Matplotlib

@@ -23,5 +23,6 @@ if clus_num >= str_num*0.33:
 
 CV = RepeatedKFold(5,10)
 lstsq = linear_model.LinearRegression()
-plot_learning_curve(lstsq,X,y,cv=CV)
+plot_learning_curve(lstsq,X,y,cv=CV,train_sizes=[0.33,0.55,0.78,1.0])
+#plot_learning_curve(lstsq,X,y,cv=CV,train_sizes=[30,60,90,120])
 

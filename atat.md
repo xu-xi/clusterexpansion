@@ -1,5 +1,4 @@
 # ATAT使用简介
----
 ## 下载与安装
 1. 从[ATAT主页](https://www.brown.edu/Departments/Engineering/Labs/avdw/atat/)下载压缩包,稳定版或者测试版均可。
 2. 解压缩
@@ -16,7 +15,6 @@
 5. 添加`$PATH`
 6. 运行`ezvasp`生成配置文件`~/.ezvasp.rc`并编辑以修改vasp运行的命令和势函数所在位置
 
----
 ## 必要输入文件
 ### lat.in
 格点文件，具体格式请参见[ATAT手册](https://www.brown.edu/Departments/Engineering/Labs/avdw/atat/manual.pdf)
@@ -24,7 +22,7 @@
 $ makelat Al,Ti fcc
 $ makelat Ba:In:O,Vac E21
 ```
-上面两个例子分别产生Al-Ti合金fcc的格点文件和含有O缺陷的BaInO的钙钛矿结构的格点文件。
+上面两个例子分别产生Al-Ti合金fcc的格点文件和含有O缺陷的BaInO$$_{1-x}$$的钙钛矿结构的格点文件。
 
 说明：
 + 不同的位点用冒号分隔开，同一位点混占的原子之间用逗号分隔开，空位用`Vac`表示
@@ -79,7 +77,7 @@ $ touch stop
 $ touch stoppoll
 ```
 
-重启计算: 与正常开始一个计算相图
+重启计算: 与正常开始一个计算相同
 
 #### 常用命令
 + `corrdump -2= -3= -4=` 产生团簇

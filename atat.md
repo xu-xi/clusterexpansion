@@ -22,7 +22,7 @@
 $ makelat Al,Ti fcc
 $ makelat Ba:In:O,Vac E21
 ```
-上面两个例子分别产生Al-Ti合金fcc的格点文件和含有O缺陷的BaInO<sub>1-x</sub>$$的钙钛矿结构的格点文件。
+上面两个例子分别产生Al-Ti合金fcc的格点文件和含有O缺陷的BaInO<sub>1-x</sub>的钙钛矿结构的格点文件。
 
 说明：
 + 不同的位点用冒号分隔开，同一位点混占的原子之间用逗号分隔开，空位用`Vac`表示
@@ -115,6 +115,7 @@ emc2 -T0=300 -T1=3000 -dT=100 -cm -x=0 -keV -gs=-1 -er=30 -aq=0 -dx=1e-5 -sigdig
 + `-cm`表示正则系综
 + `-x`其实是点团簇函数，若c表示格点的占据浓度，则x=2c-1
 + `-sigdig=12`是为了表示有足够的位数输出能量的方差以判断相变
++ `-aq`和`-dx`是自动确定MC平衡步数和取样步数的算法，其原理可参考文献[Ref.1](#ref_1)，也可以用`-eq`和`-n`来直接指定步数，需要做收敛性测试
 + 主要输出文件为`mc.out`，输入`emc2 -h`可查看每一列所表示的内容
 + 输出文件`mcsnapshot.out`
     ```sh
@@ -123,13 +124,14 @@ emc2 -T0=300 -T1=3000 -dT=100 -cm -x=0 -keV -gs=-1 -er=30 -aq=0 -dx=1e-5 -sigdig
     $ vesta POSCAR
     ```
 #### 相图计算
-基本原理可参考文献
+基本原理可参考文献[Ref.1](#ref_1)
+例子：
 ```sh
 phb -dT=10 -ltep=1e-3 -er=30 -gs1=0 -gs2=1 -o=phb.out -keV -dx=1e-5
 ```
 
 #### 构建SQS/SQoS
-SQS/SQoS是对无序体系的代表性结构，其中SQS假定原子完全随机的占据，而SQoS是SQS的扩展，可以考虑一定的短程有序性，其基本原理可参考相关文献[Ref.1](#ref_1)
+SQS/SQoS是对无序体系的代表性结构，其中SQS假定原子完全随机的占据，而SQoS是SQS的扩展，可以考虑一定的短程有序性，其基本原理可参考相关文献[Ref.2](#ref_2)
 
 必要文件：
 + rndstr.in
@@ -143,4 +145,5 @@ SQS/SQoS是对无序体系的代表性结构，其中SQS假定原子完全随机
 + 停止计算：`touch stopsqs`
 
 ## 参考文献
-1. <a name="ref_1"></a>Liu, Jian and Fern\'andez-Serra, Maria V. and Allen, Philip B., [Phys. Rev. B, 93, 054207](https://journals.aps.org/prb/abstract/10.1103/PhysRevB.93.054207)
+1. <a name="ref_1"></a> A. van de Walle and M. Asta, Self-driven lattice-model Monte Carlo simulations of alloy thermodynamic properties and phase diagrams, [Modell. Simul. Mater. Sci. Eng., 2002, 10, 521](https://iopscience.iop.org/article/10.1088/0965-0393/10/5/304) 
+2. <a name="ref_2"></a>J.Liu, M.V. Fernandez-Serra and P.B. Allen, Special quasiordered structures: Role of short-range order in the semiconductor alloy (GaN)<sub>1−x</sub>(ZnO)<sub>x</sub> [Phys. Rev. B, 2016, 93, 054207](https://journals.aps.org/prb/abstract/10.1103/PhysRevB.93.054207)

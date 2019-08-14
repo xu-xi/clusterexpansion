@@ -119,7 +119,10 @@ class Cluster():
        
 class Eci(Cluster):
     def init(self,name):
-        self.eci=np.loadtxt('%s.eci' %(name))
+        try:
+            self.eci = np.loadtxt('%s.eci' %(name))
+        except:
+            self.eci = None
 
 
 #cluster=Cluster()

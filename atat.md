@@ -22,7 +22,7 @@
 $ makelat Al,Ti fcc
 $ makelat Ba:In:O,Vac E21
 ```
-上面两个例子分别产生Al-Ti合金fcc的格点文件和含有O缺陷的BaInO$$_{1-x}$$的钙钛矿结构的格点文件。
+上面两个例子分别产生Al-Ti合金fcc的格点文件和含有O缺陷的BaInO<sub>1-x</sub>$$的钙钛矿结构的格点文件。
 
 说明：
 + 不同的位点用冒号分隔开，同一位点混占的原子之间用逗号分隔开，空位用`Vac`表示
@@ -34,7 +34,7 @@ $ makelat Ba:In:O,Vac E21
 说明：
 + `KPPRA` 为不同大小的晶胞设置统一的k点密度，若`KPPRA=1000`，则当晶胞中只有一个原子时，k点数目为1000，有两个原子时，k点数目为500，即原子数*k点数=1000
 + `USEPOT`指定所用赝势或PAW势，与`~/.ezvasp.rc`中定义势文件的位置的变量相对应
-+ `SUBATOM` 可用于使用vasp的[推荐赝势](https://cms.mpi.univie.ac.at/vasp/vasp/Recommended_PAW_potentials_DFT_calculations_using_vasp_5_2.html)，例如`SUBATOM=s/Ti$/Ti_sv/g'即表示对Ti原子用Ti_sv的势
++ `SUBATOM` 可用于使用vasp的[推荐赝势](https://cms.mpi.univie.ac.at/vasp/vasp/Recommended_PAW_potentials_DFT_calculations_using_vasp_5_2.html)，例如`SUBATOM=s/Ti$/Ti_sv/g`即表示对Ti原子用Ti_sv的势
 + `DOSTATIC` 在做完结构弛豫后再做一个静态计算，这样最后的能量更为准确
 
 
@@ -129,7 +129,7 @@ phb -dT=10 -ltep=1e-3 -er=30 -gs1=0 -gs2=1 -o=phb.out -keV -dx=1e-5
 ```
 
 #### 构建SQS/SQoS
-SQS/SQoS是对无序体系的代表性结构，其中SQS假定原子完全随机的占据，而SQoS是SQS的扩展，可以考虑一定的短程有序性，其基本原理可参考相关文献。
+SQS/SQoS是对无序体系的代表性结构，其中SQS假定原子完全随机的占据，而SQoS是SQS的扩展，可以考虑一定的短程有序性，其基本原理可参考相关文献[Ref.1](#ref_1)
 
 必要文件：
 + rndstr.in
@@ -141,3 +141,6 @@ SQS/SQoS是对无序体系的代表性结构，其中SQS假定原子完全随机
 + 可通过`-tcf`设定目标团簇函数（可从`mc.out`中提取），即SQoS方法
 + 输出文件为`mcsqs.log`和`bestsqs.out`
 + 停止计算：`touch stopsqs`
+
+## 参考文献
+1. <a name="ref_1"></a>Liu, Jian and Fern\'andez-Serra, Maria V. and Allen, Philip B., [Phys. Rev. B, 93, 054207](https://journals.aps.org/prb/abstract/10.1103/PhysRevB.93.054207)

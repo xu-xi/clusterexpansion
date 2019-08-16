@@ -85,7 +85,7 @@ def random_structure_generator(lattice,supercell,index,struct_number,energy_list
 
 
 def Main(ArgList):
-    parser=argparse.ArgumentParser(description="Cluster expansion construction basing on given clusters and supercell. Configurations will be generated randomly to reach the target cv value. Note that the default cv is 0, thus the construction process will never terminate by default. Set a finite CV by -v or specify -n or create an empty file named \'stop\' to finish current job. \n\nFour input files are required: lat.in, str.in, supercell.in and vasp.wrap.",
+    parser=argparse.ArgumentParser(description='''Cluster expansion construction basing on given clusters and supercell. Configurations will be generated randomly to reach the target cv value. Note that the default cv is 0, thus the construction process will never terminate by default. Set a finite CV by -v or specify -n or create an empty file named \'stop\' to finish current job. \n\nFour input files are required: lat.in, str.in, supercell.in and vasp.wrap.''',
 
                     formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('-c',default='clusters.out',dest='clusters',help="pre-defined clusters file")

@@ -117,7 +117,7 @@ emc2 -T0=300 -T1=3000 -dT=100 -cm -x=0 -keV -gs=-1 -er=30 -aq=0 -dx=1e-5 -sigdig
 + `-sigdig=12`是为了表示有足够的位数输出能量的方差以判断相变
 + `-aq`和`-dx`是自动确定MC平衡步数和取样步数的算法，其原理可参考文献[Ref.1](#ref_1)，也可以用`-eq`和`-n`来直接指定步数，需要做收敛性测试
 + 主要输出文件为`mc.out`，输入`emc2 -h`可查看每一列所表示的内容
-+ 输出文件`mcsnapshot.out`
++ 输出文件`mcsnapshot.out`为最后一个模拟温度下的MC快照。如果想得到某个温度下的snapshot，可以只设置T0而不设置T1和dT。
     ```sh
     $ cp mcsnapshot.out str.out
     $ runstruct_vasp -nr 
@@ -125,6 +125,7 @@ emc2 -T0=300 -T1=3000 -dT=100 -cm -x=0 -keV -gs=-1 -er=30 -aq=0 -dx=1e-5 -sigdig
     ```
 #### 相图计算
 基本原理可参考文献[Ref.1](#ref_1)
+
 例子：
 ```sh
 phb -dT=10 -ltep=1e-3 -er=30 -gs1=0 -gs2=1 -o=phb.out -keV -dx=1e-5
@@ -137,13 +138,30 @@ SQS/SQoS是对无序体系的代表性结构，其中SQS假定原子完全随机
 + rndstr.in
 + clusters.out
 
+`rndstr.in`的一个例子：
+
+```
+4.1000 0.000000 0.000000
+0.000000 4.1000 0.000000
+0.000000 0.000000 4.1000
+1.000000 0.000000 0.000000
+0.000000 1.000000 0.000000
+0.000000 0.000000 1.000000
+0.000000 0.500000 0.500000 O=0.6667,N=0.3333
+0.500000 0.000000 0.500000 O=0.6667,N=0.3333
+0.500000 0.500000 0.000000 O=0.6667,N=0.3333
+0.000000 0.000000 0.000000 Ba
+0.500000 0.500000 0.500000 Ta
+```
+
 运行`mcsqs -n= &`
 说明：
 + `-n`设定SQS晶胞的原子数
 + 可通过`-tcf`设定目标团簇函数（可从`mc.out`中提取），即SQoS方法
-+ 输出文件为`mcsqs.log`和`bestsqs.out`
 + 停止计算：`touch stopsqs`
++ 输出文件为`mcsqs.log`和`bestsqs.out`
++ 将`bestsqs.out`复制为`str.out`，然后运行`runstruct_vasp -nr`可生成vasp的输入文件
 
 ## 参考文献
 1. <a name="ref_1"></a> A. van de Walle and M. Asta, Self-driven lattice-model Monte Carlo simulations of alloy thermodynamic properties and phase diagrams, [Modell. Simul. Mater. Sci. Eng., 2002, 10, 521](https://iopscience.iop.org/article/10.1088/0965-0393/10/5/304) 
-2. <a name="ref_2"></a>J.Liu, M.V. Fernandez-Serra and P.B. Allen, Special quasiordered structures: Role of short-range order in the semiconductor alloy (GaN)<sub>1−x</sub>(ZnO)<sub>x</sub> [Phys. Rev. B, 2016, 93, 054207](https://journals.aps.org/prb/abstract/10.1103/PhysRevB.93.054207)
+2. <a name="ref_2"></a> J. Liu, M. V. Fernandez-Serra and P. B. Allen, Special quasiordered structures: Role of short-range order in the semiconductor alloy (GaN)<sub>1−x</sub>(ZnO)<sub>x</sub>, [Phys. Rev. B, 2016, 93, 054207](https://journals.aps.org/prb/abstract/10.1103/PhysRevB.93.054207)

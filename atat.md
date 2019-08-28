@@ -28,11 +28,13 @@ $ makelat Ba:In:O,Vac E21
 + 不同的位点用冒号分隔开，同一位点混占的原子之间用逗号分隔开，空位用`Vac`表示
 + 结构文件的模板在`atatX_XX/data`中,可以在`atatX_XX/data/str`中找到更多并复制到上一级目录使用
 + 初始的晶胞参数根据原子半径产生，原子半径的默认值在`atatX_XX/data/radii.in`文件中
++ 如果所需结构不在结构库中，可以使用`py_conv`转换得到，`py_conv`为[tmckit](https://github.com/ccme-tmc/tmckit)的脚本，其使用请参考其帮助文档
 
 ### vasp.wrap
 计算参数控制文件，支持INCAR的绝大多数参数
+
 说明：
-+ `KPPRA` 为不同大小的晶胞设置统一的k点密度，若`KPPRA=1000`，则当晶胞中只有一个原子时，k点数目为1000，有两个原子时，k点数目为500，即原子数*k点数=1000
++ `KPPRA` 为不同大小的晶胞设置统一的k点密度，若`KPPRA=1000`，则当晶胞中只有一个原子时，k点数目为1000，有两个原子时，k点数目为500，即原子数*k点数=1000。目前还不支持通过`KSPACING`设置k点密度
 + `USEPOT`指定所用赝势或PAW势，与`~/.ezvasp.rc`中定义势文件的位置的变量相对应
 + `SUBATOM` 可用于使用vasp的[推荐赝势](https://cms.mpi.univie.ac.at/vasp/vasp/Recommended_PAW_potentials_DFT_calculations_using_vasp_5_2.html)，例如`SUBATOM=s/Ti$/Ti_sv/g`即表示对Ti原子用Ti_sv的势
 + `DOSTATIC` 在做完结构弛豫后再做一个静态计算，这样最后的能量更为准确
@@ -61,7 +63,8 @@ pollmach runstruct_vasp
 ```
 说明：
 + `maps`不断产生结构和构建团簇展开模型，`-d`表示使用默认参数，直接输入`maps`可查看可用参数
-+ `runstruct_vasp`调用`vasp`计算所产生的结构的能量
++ `runstruct_vasp`调用`vasp`计算所产生的结构的能量，每个目录包含一个结构及其计算结果，每个目录下的`energy`文件即从vasp的计算中读取的能量
++ `maps.log`中记载了现有的团簇展开模型的状态，包括对基态构型的预测和LOOCV等
 
 什么时候停止计算：
 + 团簇展开模型能够成功预测基态 (查看maps.log)
@@ -86,7 +89,7 @@ $ touch stoppoll
     + `clusters.out`中有团簇格点位置的详细信息
     
 + `clusterexpand -e -cv energy` 得到团簇展开系数
-    + 此时产生的ECI文件为`energy.eci`,而`maps`产生的ECI为`eci.out`
+    + 此时产生的ECI文件为`energy.eci`，而`maps`产生的ECI为`eci.out`，后者是形成能的团簇展开结果，前者是直接对vasp能量(即`energy`文件)的团簇展开
     + 如果需要对其它性质做团簇展开，例如带隙，则可以在每个结构的目录下创建一个`bandgap`文件,其内容即为带隙的大小，然后运行`clusterexpand -e -cv -pa bandgap`以得到带隙团簇展开的系数`bandgap.eci`，其中`-pa`表示所展开的量已经是一个平均的量
 
 #### 检查计算结果
@@ -124,7 +127,7 @@ emc2 -T0=300 -T1=3000 -dT=100 -cm -x=0 -keV -gs=-1 -er=30 -aq=0 -dx=1e-5 -sigdig
     $ vesta POSCAR
     ```
 #### 相图计算
-基本原理可参考文献[Ref.1](#ref_1)
+基本原理可参考文献[Ref.1](#ref_1)，Martin Baker的[笔记](https://arxiv.org/abs/1907.10151)提供了更多的例子和细节
 
 例子：
 ```sh
@@ -132,7 +135,7 @@ phb -dT=10 -ltep=1e-3 -er=30 -gs1=0 -gs2=1 -o=phb.out -keV -dx=1e-5
 ```
 
 #### 构建SQS/SQoS
-SQS/SQoS是对无序体系的代表性结构，其中SQS假定原子完全随机的占据，而SQoS是SQS的扩展，可以考虑一定的短程有序性，其基本原理可参考相关文献[Ref.2](#ref_2)
+SQS/SQoS是对无序体系的代表性结构，其中SQS假定原子完全随机的占据，而SQoS是SQS的扩展，可以考虑一定的短程有序性，其基本原理可参考相关文献[Ref.2](#ref_2)，Eric的[网页](http://grandcentral.apam.columbia.edu:5555/tutorials/dft_procedures/sqs/index.html)提供了一个例子和流程
 
 必要文件：
 + rndstr.in

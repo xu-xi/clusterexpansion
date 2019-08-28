@@ -46,6 +46,7 @@ SIGMA = 0.05
 NSW = 100
 IBRION = 2
 ISIF = 3
+KPPRA = 1000
 USEPOT = PAWPBE
 SUBATOM = s/Ti$/Ti_sv/g
 DOSTATIC
@@ -113,7 +114,7 @@ $ touch stoppoll
 #### 检查计算结果
 + VASP是否正常结束
     + ATAT会自动检查一些错误(`checkerr_vasp`)
-    + 但如果结构优化的离子步数不够大，不会有提示
+    + 但如果结构优化的离子步数不够大，不会有提示，因此建议在`vasp.wrap`中将`NSW`设置大一些
 + 晶胞的应变是否很大
     + `checkrelax` (<0.1 suggested by ATAT）
 

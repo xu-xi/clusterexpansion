@@ -17,7 +17,7 @@
 
 ## 必要输入文件
 ### lat.in
-格点文件，具体格式请参见[ATAT手册](https://www.brown.edu/Departments/Engineering/Labs/avdw/atat/manual.pdf)
+格点文件，可由`makelat`得到，具体格式请参见[ATAT手册](https://www.brown.edu/Departments/Engineering/Labs/avdw/atat/manual.pdf)
 ```sh
 $ makelat Al,Ti fcc
 $ makelat Ba:In:O,Vac E21
@@ -31,7 +31,25 @@ $ makelat Ba:In:O,Vac E21
 + 如果所需结构不在结构库中，可以使用`py_conv`转换得到，`py_conv`为[tmckit](https://github.com/ccme-tmc/tmckit)的脚本，其使用请参考其帮助文档
 
 ### vasp.wrap
-计算参数控制文件，支持INCAR的绝大多数参数
+[vasp](https://www.vasp.at/)的计算参数控制文件，支持INCAR的绝大多数参数
+
+示例：
+
+```
+[INCAR]
+PREC = high
+ENCUT = 400
+EDIFF = 1E-6
+EDIFFG = -1E-2
+ISMEAR = 0
+SIGMA = 0.05
+NSW = 100
+IBRION = 2
+ISIF = 3
+USEPOT = PAWPBE
+SUBATOM = s/Ti$/Ti_sv/g
+DOSTATIC
+```
 
 说明：
 + `KPPRA` 为不同大小的晶胞设置统一的k点密度，若`KPPRA=1000`，则当晶胞中只有一个原子时，k点数目为1000，有两个原子时，k点数目为500，即原子数*k点数=1000。目前还不支持通过`KSPACING`设置k点密度

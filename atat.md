@@ -25,7 +25,7 @@ $ makelat Ba:In:O,Vac E21
 上面两个例子分别产生Al-Ti合金fcc的格点文件和含有O缺陷的BaInO<sub>1-x</sub>的钙钛矿结构的格点文件。
 
 说明：
-+ 不同的位点用冒号分隔开，同一位点混占的原子之间用逗号分隔开，空位用`Vac`表示
++ 不同的位点用冒号分隔开，同一位点混占的原子之间用逗号分隔开，空位用`Vac`表示。对于二组分的情形，逗号前的原子的赝自旋变量为-1，其浓度为(1-x)，逗号后的原子赝自旋变量为+1，其浓度为x.
 + 结构文件的模板在`atatX_XX/data`中,可以在`atatX_XX/data/str`中找到更多并复制到上一级目录使用
 + 初始的晶胞参数根据原子半径产生，原子半径的默认值在`atatX_XX/data/radii.in`文件中
 + 如果所需结构不在结构库中，可以使用`py_conv`转换得到，`py_conv`为[tmckit](https://github.com/ccme-tmc/tmckit)的脚本，其使用请参考其帮助文档
@@ -176,13 +176,22 @@ SQS/SQoS是对无序体系的代表性结构，其中SQS假定原子完全随机
 0.500000 0.500000 0.500000 Ta
 ```
 
+产生团簇文件`clusters.out`：
+```
+corrdump -l=rndstr.in -clus -noe -nop -2= -3= -4=
+```
+
+说明：
++ `-noe`和`-nop`表示忽略空团簇和点团簇
++ 用`getclus`查看所产生的团簇。如果团簇数目过少，则后续产生SQS有可能很容易完全匹配团簇函数，导致SQS实际上不够随机；而如果团簇过多，则有可能导致近邻的团簇匹配得不够好，而通常近邻的团簇是更为重要的，可以通过`-wd`加上权重以避免这种情况
+
 运行`mcsqs -n= &`
 说明：
 + `-n`设定SQS晶胞的原子数
 + 可通过`-tcf`设定目标团簇函数（可从`mc.out`中提取），即SQoS方法
-+ 停止计算：`touch stopsqs`
-+ 输出文件为`mcsqs.log`和`bestsqs.out`
-+ 将`bestsqs.out`复制为`str.out`，然后运行`runstruct_vasp -nr`可生成vasp的输入文件
++ `mcsqs`不会自动停下来，可用`touch stopsqs`停止
++ 输出文件`mcsqs.log`中有对团簇函数匹配的优化记录
++ 输出文件`bestsqs.out`为目前找到的最佳的SQS，可将其复制为`str.out`，然后运行`runstruct_vasp -nr`生成vasp的输入文件用于后续计算
 
 ## 参考文献
 1. <a name="ref_1"></a> A. van de Walle and M. Asta, Self-driven lattice-model Monte Carlo simulations of alloy thermodynamic properties and phase diagrams, [Modell. Simul. Mater. Sci. Eng., 2002, 10, 521](https://iopscience.iop.org/article/10.1088/0965-0393/10/5/304) 

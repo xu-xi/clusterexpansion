@@ -72,6 +72,7 @@ DOSTATIC
     -2*O+4*Ce+3*Sm>=-0.2
     ```
 说明：
++ 注意限制的组分为总的组分（即所有原子的组分加起来为1），而不是sublattice的组分
 + 只能用不等式限制而不能用等式，并且ATAT依然会产生少数在限制条件之外的结构来检测可能的基态构型
 + 如果条件限制得过于严格，在产生了一定数量的结构后ATAT产生结构的速度将会极慢，原因不明。这种情况建议自己写脚本产生所需的结构。
 ## 运行
@@ -81,6 +82,7 @@ maps -d &
 pollmach runstruct_vasp
 ```
 说明：
++ 缺少`.machines.rc`文件的提示可忽略，该文件用于跨节点的并行
 + `maps`不断产生结构和构建团簇展开模型，`-d`表示使用默认参数，直接输入`maps`可查看可用参数
 + `runstruct_vasp`调用`vasp`计算所产生的结构的能量，每个目录包含一个结构及其计算结果，每个目录下的`energy`文件即从vasp的计算中读取的能量
 + `maps.log`中记载了现有的团簇展开模型的状态，包括对基态构型的预测和LOOCV等
@@ -99,7 +101,12 @@ $ touch stop
 $ touch stoppoll
 ```
 
-重启计算: 与正常开始一个计算相同
+重启计算: 与正常开始一个计算相同，如果之前的计算不是正常结束则需要删除一些文件
+```
+rm maps_is_running pollmach_is_running ready
+maps -d &
+pollmach runstruct_vasp
+```
 
 #### 常用命令
 + `corrdump -2= -3= -4=` 产生团簇
@@ -154,7 +161,7 @@ phb -dT=10 -ltep=1e-3 -er=30 -gs1=0 -gs2=1 -o=phb.out -keV -dx=1e-5
 ```
 
 #### 构建SQS/SQoS
-SQS/SQoS是对无序体系的代表性结构，其中SQS假定原子完全随机的占据，而SQoS是SQS的扩展，可以考虑一定的短程有序性，其基本原理可参考相关文献[Ref.2](#ref_2)，Eric的[网页](http://grandcentral.apam.columbia.edu:5555/tutorials/dft_procedures/sqs/index.html)提供了一个例子和流程
+SQS/SQoS是对无序体系的代表性结构，其中SQS假定原子完全随机的占据，而SQoS是SQS的扩展，可以考虑一定的短程有序性，其基本原理可参考相关文献[Ref.2](#ref_2)
 
 必要文件：
 + rndstr.in

@@ -1,28 +1,25 @@
 #!/usr/bin/env python
 import argparse,sys,os,shutil,subprocess,random,copy,numpy,socket,ase.io
 from celib import initstr,occupy,ce_energy
-from clusters_opt import clusters_optimizer
 
 def vasp_no_error(index):
     'check if current calculation is converged or not'
     os.chdir(str(index))
+
     if os.path.isfile('vasp.out.relax'):
         if subprocess.call('grep required vasp.out.relax',shell=True)!=0:
             os.mknod('error')
             sys.stderr.write('ERROR in %s, check the output' % (index))
-            os.chdir('../')
             return 0
     elif os.path.isfile('vasp.out.static'):
         if subprocess.call('grep required vasp.out.static',shell=True)!=0:
             os.mknod('error')
             sys.stderr.write('ERROR in %s, check the output' % (index))
-            os.chdir('../')
             return 0
     elif os.path.isfile('vasp.out'):
         if subprocess.call('grep required vasp.out',shell=True)!=0:
             os.mknod('error')
             sys.stderr.write('ERROR in %s, check the output' % (index))
-            os.chdir('../')
             return 0
     else:
         return 0
@@ -62,17 +59,17 @@ def random_structure_generator(lattice,supercell,index,struct_number,energy_list
     'generate structures randomly and call VASP to calculate its energy'
     while 1:
         initstr(lattice,supercell)
-        if index<=2:
+        if struct_number <= 3: #to be improved
             break
         else:
-            new_str_energy=float(subprocess.check_output('corrdump -c -eci=energy.eci -s=str.out',shell=True))
-            if new_str_energy not in energy_list:
+            new_str_energy = float(subprocess.check_output('corrdump -c -eci=energy.eci -s=str.out',shell=True))
+            if abs(min(energy_list - new_str_energy)) >= 0.00001: # two configurations with very close energies are assumed to be the same
                 break
     while 1:
         try:
             os.mkdir(str(index))
         except:
-            index+=1
+            index += 1
         else:
             break
 
@@ -84,47 +81,70 @@ def random_structure_generator(lattice,supercell,index,struct_number,energy_list
     os.chdir('../')
 
 
-def Main(ArgList):
-    parser=argparse.ArgumentParser(description='''Cluster expansion construction basing on given clusters and supercell. Configurations will be generated randomly to reach the target cv value. Note that the default cv is 0, thus the construction process will never terminate by default. Set a finite CV by -v or specify -n or create an empty file named \'stop\' to finish current job. \n\nFour input files are required: lat.in, str.in, supercell.in and vasp.wrap.''',
 
-                    formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('-c',default='clusters.out',dest='clusters',help="pre-defined clusters file")
+def Main(ArgList):
+    parser=argparse.ArgumentParser(description=
+'''
+Cluster expansion construction for given clusters and supercell. Configurations will be generated randomly to reach the target cv value. Note that the default cv is 0.001 and the default structure number is 100. Change these default values by needs. create an empty file named \'stop\' can cleanly finish running job.
+
+Five input files are required: lat.in, str.in, clusters.out, supercell.in and vasp.wrap, where lat.in, clusters.out and vasp.wrap are just the same as ATAT.
+
+An example of str.in:
+
+4.100000 0.000000 0.000000
+0.000000 4.100000 0.000000
+0.000000 0.000000 4.100000
+1.000000 0.000000 0.000000
+0.000000 1.000000 0.000000
+0.000000 0.000000 1.000000
+0.000000 0.500000 0.500000 O=2/3,N=1/3
+0.500000 0.000000 0.500000 O=2/3,N=1/3
+0.500000 0.500000 0.000000 O=2/3,N=1/3
+0.000000 0.000000 0.000000 Ba
+0.500000 0.500000 0.500000 Ta
+
+An example of supercell.in (2*2*2 simple supecell):
+
+2 0 0
+0 2 0
+0 0 2
+''',formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('-l',default='str.in',dest='lattice',help="the lattice file")
-    parser.add_argument('-v',type=float,default=0.0,dest='cv',help="the objective cross validation value")
-    parser.add_argument('-n',type=int,dest='number',help="the maximum mumber of structures to fit")
+    parser.add_argument('-v',type=float,default=0.001,dest='cv',help="the objective cross validation value")
+    parser.add_argument('-n',type=int,dest='number',default=100,help="the maximum mumber of structures to fit")
     parser.add_argument('-s',default='supercell.in',dest='supercell',help="the input supercell file")
     parser.add_argument('-p',default='energy',dest='property',help="the property to expand")
     parser.add_argument('--mbj',action='store_true',dest='mbj',help="call WIEN2k to calculate mBJ band gaps")
     #parser.add_argument('--version',action='version',version='2017.2.23',help="output the version of the program")
     args=parser.parse_args()
 
-    index_number=0
-    struct_number=0
+    index_number = 0
+    struct_number = 0
+    wd = os.getcwd() #working directory
+
+    if not os.path.isfile('clusters.out'): 
+        subprocess.check_call('corrdump -clus -2=6',shell=True)
+
     #scan current directory to collect finished calculation
-    for item in os.listdir(os.getcwd()):
-        fullpath=os.path.join(os.getcwd(),item)
+    for item in os.listdir(wd):
+        fullpath = os.path.join(wd,item)
         if os.path.isdir(fullpath):
-            index_number+=1
+            index_number += 1
             os.chdir(fullpath)
             if os.path.isfile('energy') and not os.path.isfile('error'):
-                struct_number+=1
-            os.chdir('../')
+                struct_number += 1
+            os.chdir(wd)
+       
+    celog = file('ce.log','w')
 
-    #just optimize the choice of clusters and do not construct cluster expansion
-    #if args.opt_only==True:
-    #    cluster_optimizer()
-    #    sys.exit(1)
-        
-    celog=file('ce.log','w')
-    celog.write(subprocess.check_output("date"))
-    celog.write(str(struct_number)+' structures have already been calulated in current directory.\n')
+    if struct_number == 0:
+        energy_list = numpy.array([])
+    else:
+        celog.write(str(struct_number)+' structures have already been calulated in current directory.\n')
+        subprocess.check_call('clusterexpand -e -cv energy',shell=True)
+        energy_list = numpy.loadtxt('allenergy.out',ndmin=1)
+
     celog.flush()
-
-    #if two structures have different ce energies, they are definitly different, therefore the energy_list is used to avoid repeated calculation 
-    try:
-        energy_list=list(numpy.loadtxt('allenergy.out'))
-    except:
-        energy_list=[]
 
     #minimum cluster expansion
     '''
@@ -143,42 +163,26 @@ def Main(ArgList):
                     celog.close()
                     os.remove('stop')
                     break
-    '''
-    if struct_number < 5: 
-        for i in range(5-struct_number):
-            index_number+=1
-            random_structure_generator(args.lattice,args.supercell,index_number,struct_number,energy_list,args.mbj)
-            if vasp_no_error(index_number)!=0:
-                struct_number+=1
-            cv=float(subprocess.check_output("clusterexpand -e -cv %s | tail -1" % (args.property),shell=True))
-            energy_list=numpy.loadtxt('allenergy.out').tolist()
-            celog.write(subprocess.check_output("date"))
-            celog.write('Cycle %s CV: %s\n' % (struct_number,cv))
-            celog.flush()
-            if os.path.isfile('stop'):
-                celog.close()
-                os.remove('stop')
-                sys.exit(1)
-                break
+   '''
 
     #build cluster expansion until convengence
     while 1:
-        index_number+=1
+        index_number += 1
         random_structure_generator(args.lattice,args.supercell,index_number,struct_number,energy_list,args.mbj)
-        if vasp_no_error(index_number)!=0:
-            struct_number+=1
-        #cv=clusters_optimizer(args.property,struct_number-1,args.step)
-        cv=float(subprocess.check_output("clusterexpand -e -cv %s | tail -1" %(args.property),shell=True))
-        energy_list=numpy.loadtxt('allenergy.out').tolist()
+        if vasp_no_error(index_number) != 0:
+            struct_number += 1
+        os.chdir(wd)
+        cv = float(subprocess.check_output("clusterexpand -e -cv %s | tail -1" %(args.property),shell=True))
+        energy_list = numpy.loadtxt('allenergy.out',ndmin=1)
         celog.write(subprocess.check_output("date"))
         celog.write('Cycle %s CV: %s\n' % (struct_number,cv))
         celog.flush()
-        if os.path.isfile('stop') or cv<=args.cv:
+        if os.path.isfile('stop') or cv <= args.cv:
             celog.close()
             os.remove('stop')
             break
-        if args.number!=None:
-            if index_number>=args.number:
+        if args.number != None:
+            if index_number >= args.number:
                 celog.close()
                 break
 		

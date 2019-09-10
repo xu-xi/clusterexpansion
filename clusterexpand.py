@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-import argparse,sys,os,shutil,subprocess,random,copy,numpy,socket,ase.io
+import argparse,sys,os,shutil,subprocess,random,copy,socket,ase.io,time
 from celib import initstr,occupy,ce_energy
+import numpy as np
 
 def vasp_no_error(index):
     'check if current calculation is converged or not'
@@ -55,16 +56,24 @@ def run_wien2k_scf():
     subprocess.check_call('w2k_tbbj -p',shell=True)
 
 
-def random_structure_generator(lattice,supercell,index,struct_number,energy_list,mbj=False):
-    'generate structures randomly and call VASP to calculate its energy'
+def random_structure_generator(lattice,supercell,index,struct_number,mbj=False):
+    'generate structures randomly and call VASP to calculate its energy. The inner product of two cluster functions is used to judge their structural similarity'
+    t0 = time.clock()
     while 1:
         initstr(lattice,supercell)
-        if struct_number <= 3: #to be improved
-            break
-        else:
-            new_str_energy = float(subprocess.check_output('corrdump -c -eci=energy.eci -s=str.out',shell=True))
-            if abs(min(energy_list - new_str_energy)) >= 0.00001: # two configurations with very close energies are assumed to be the same
+        if struct_number >= 1:
+            corr_func = np.loadtxt('allcorr.out',ndmin=2)
+            new_str = np.array(subprocess.check_output('corrdump -c -s=str.out',shell=True).split(),dtype=float)
+            ip = []
+            for i in range(len(corr_func)):
+                ip.append(np.dot(corr_func[i],new_str)/(np.linalg.norm(corr_func[i])*np.linalg.norm(new_str)))
+            if 1.0 - max(ip) > 0.01:
                 break
+            elif time.clock() - t0 > 100:
+                print 'Could not find new structure. Please enlarge the supercell.';sys.exit(1)
+        else:
+            break
+                
     while 1:
         try:
             os.mkdir(str(index))
@@ -87,7 +96,7 @@ def Main(ArgList):
 '''
 Cluster expansion construction for given clusters and supercell. Configurations will be generated randomly to reach the target cv value. Note that the default cv is 0.001 and the default structure number is 100. Change these default values by needs. create an empty file named \'stop\' can cleanly finish running job.
 
-Five input files are required: lat.in, str.in, clusters.out, supercell.in and vasp.wrap, where lat.in, clusters.out and vasp.wrap are just the same as ATAT.
+Four input files are required: lat.in, str.in, supercell.in and vasp.wrap, where lat.in, clusters.out and vasp.wrap are just the same as ATAT.
 
 An example of str.in:
 
@@ -122,8 +131,8 @@ An example of supercell.in (2*2*2 simple supecell):
     struct_number = 0
     wd = os.getcwd() #working directory
 
-    if not os.path.isfile('clusters.out'): 
-        subprocess.check_call('corrdump -clus -2=6',shell=True)
+    #if not os.path.isfile('clusters.out'):
+    subprocess.check_call('corrdump -clus -2=6 -3=5 -4=4',shell=True)
 
     #scan current directory to collect finished calculation
     for item in os.listdir(wd):
@@ -137,14 +146,10 @@ An example of supercell.in (2*2*2 simple supecell):
        
     celog = file('ce.log','w')
 
-    if struct_number == 0:
-        energy_list = numpy.array([])
-    else:
+    if struct_number != 0:
         celog.write(str(struct_number)+' structures have already been calulated in current directory.\n')
         subprocess.check_call('clusterexpand -e -cv energy',shell=True)
-        energy_list = numpy.loadtxt('allenergy.out',ndmin=1)
-
-    celog.flush()
+        celog.flush()
 
     #minimum cluster expansion
     '''
@@ -155,7 +160,7 @@ An example of supercell.in (2*2*2 simple supecell):
             for i in range(ce_min):
                 random_structure_generator(args.lattice,args.supercell,index,struct_number,energy_list)
                 cv=float(subprocess.check_output("clusterexpand -e -cv %s | tail -1" % (args.property),shell=True))
-                energy_list=numpy.loadtxt('allenergy.out').tolist()
+                energy_list=np.loadtxt('allenergy.out').tolist()
                 celog.write(subprocess.check_output("date"))
                 celog.write('Cycle %s CV: %s\n' % (struct_number,cv))
                 celog.flush()
@@ -168,18 +173,21 @@ An example of supercell.in (2*2*2 simple supecell):
     #build cluster expansion until convengence
     while 1:
         index_number += 1
-        random_structure_generator(args.lattice,args.supercell,index_number,struct_number,energy_list,args.mbj)
+        random_structure_generator(args.lattice,args.supercell,index_number,struct_number,args.mbj)
         if vasp_no_error(index_number) != 0:
             struct_number += 1
         os.chdir(wd)
         cv = float(subprocess.check_output("clusterexpand -e -cv %s | tail -1" %(args.property),shell=True))
-        energy_list = numpy.loadtxt('allenergy.out',ndmin=1)
+        energy_list = np.loadtxt('allenergy.out',ndmin=1)
         celog.write(subprocess.check_output("date"))
         celog.write('Cycle %s CV: %s\n' % (struct_number,cv))
         celog.flush()
-        if os.path.isfile('stop') or cv <= args.cv:
+        if os.path.isfile('stop') or cv < args.cv:
             celog.close()
-            os.remove('stop')
+            try:
+               os.remove('stop')
+            except:
+                pass
             break
         if args.number != None:
             if index_number >= args.number:

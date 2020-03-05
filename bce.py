@@ -38,12 +38,12 @@ with basic_model:
     Y_obs=pm.Normal('Y_obs',mu=mu,sd=sigma,observed=Y) #Likelihood
 
 #map_estimate=pm.find_MAP(model=basic_model)
-#print map_estimate
+#print(map_estimate)
 
 with basic_model:
     trace=pm.sample(5000,chains=4,tune=1000,nuts_kwargs=dict(target_accept=0.9))
 
-print pm.summary(trace).round(6)
+print(pm.summary(trace).round(6))
 
 #pm.traceplot(trace)
 #plt.show()

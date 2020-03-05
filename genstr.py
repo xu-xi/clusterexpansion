@@ -9,15 +9,15 @@ parser.add_argument('-s','--supercell',default='supercell.in',dest='supercell_fi
 args=parser.parse_args()
 
 isublattices,iatomlist,vsublattices,vatomlist,concentrations,n=initstr(args.latfile,args.supercell_file)
-strfile=file('str.out','r')
+strfile=open('str.out','r')
 lattinfo=[]
 weights={}
 index={}
 for i in range(6):
-	lattinfo.append(map(float,strfile.readline().split()))
+	lattinfo.append(list(map(float,strfile.readline().split())))
 step=0
 for vatomsites in itertools.product(*[enumer(x) for x in vatomlist]):
-	strfile=file('str.out','w')
+	strfile=open('str.out','w')
 	listwrite(strfile,lattinfo)
 	occupy(strfile,isublattices,iatomlist)
 	occupy(strfile,vsublattices,list(vatomsites))
@@ -32,7 +32,7 @@ for vatomsites in itertools.product(*[enumer(x) for x in vatomlist]):
 		os.mkdir(str(step))
 		shutil.copy('str.out',str(step))
 
-datafile=file('data.out','w')
+datafile=open('data.out','w')
 datafile.write('#index\tenergy_ce\tweights\n')
 energy_list=sorted(weights)
 for i in energy_list:

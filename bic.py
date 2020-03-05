@@ -1,9 +1,9 @@
-#!/usr/bin/env python
-import math,argparse,subprocess
+#!/usr/bin/env python3
+import math, argparse, subprocess
 import numpy as np
 import matplotlib.pyplot as plt
 from cluster import Cluster
-from celib import BIC,read_cluster_function
+from celib import BIC, read_cluster_function
 
 parser = argparse.ArgumentParser(description='Calculate and plot BIC for different cluster expansion models. Models are constructed hierarchically according to cluster radius.',
                 formatter_class = argparse.ArgumentDefaultsHelpFormatter) 
@@ -31,14 +31,14 @@ for model in models:
     ECI = np.linalg.lstsq(cluster_function[:,model],y,rcond=None)[0]
     parameter_num.append(len(ECI))
     bic = BIC(cluster_function[:,model],ECI,y)
-    print model,bic
+    print(model, bic)
     bic_set.append(bic)
     if bic < min_bic:
         best_model = model
         min_bic = bic
 
-#print best_model
-print parameter_num[bic_set.index(min(bic_set))],min_bic
+#print(best_model)
+print(parameter_num[bic_set.index(min(bic_set))], min_bic)
 
 plt.plot(parameter_num,bic_set,'o--',ms=12,fillstyle='none')
 plt.plot(parameter_num[bic_set.index(min(bic_set))],min_bic,'o',ms=12,color='red',label='The optimal model')

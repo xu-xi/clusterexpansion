@@ -57,7 +57,7 @@ class Cluster():
                     clus_num_3+=1
                 elif self.data[i,0]==4:
                     clus_num_4+=1
-        print clus_num_2,clus_num_3,clus_num_4
+        print(clus_num_2, clus_num_3, clus_num_4)
         return index
 
     def get_cluster_functions(self):
@@ -74,7 +74,7 @@ class Cluster():
         cluster_function=np.array(cluster_function,dtype='float')
         condition_number=np.linalg.cond(cluster_function)
         if condition_number >= 1E15:
-            print "WARNING: The condition number of the matrix of cluster functions is too large: %.6e\n" %(np.linalg.cond(cluster_function))
+            print("WARNING: The condition number of the matrix of cluster functions is too large: %.6e\n" %(np.linalg.cond(cluster_function)))
         return np.array(cluster_function)
 
     def get_cluster_function_from_file(self):

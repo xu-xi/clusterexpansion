@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import numpy as np
 from cluster import Cluster
 from celib import calc_cv,read_cluster_function,read_quantity
@@ -27,14 +27,13 @@ data=RepeatedKFold(n_splits=args.kfold,n_repeats=args.repeated)
 #models=cluster.construct_candidates(4,100)
 
 model_size=[]
-output=file('cv_test_%s.dat' %(args.property),'w')
+output=open('cv_test_%s.dat' %(args.property),'w')
 output.write('#Number\tRadius\tTrain_mean\tTrain_std\tTest_mean\tTest_std\n')
 
 for i in radius_cutoff:
     model=cluster.get_cutoff_clusters(i)
-    print 'Cut-off radius of clusters: %.3f' %(i) 
-    print 'Index of clusters:\n',model
-    print '\n'
+    print('Cut-off radius of clusters: %.3f' %(i))
+    print('Index of clusters:\n', model, '\n')
     train_list=np.array([])
     test_list=np.array([])
     model_size.append(len(model))

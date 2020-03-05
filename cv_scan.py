@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import numpy as np
 from cluster import Cluster
 from celib import calc_cv,BIC
@@ -24,10 +24,10 @@ def optimal_model(score_type,cluster_order,initial_model,initial_score):
     subprocess.check_call('getclus > clusters.tmp',shell=True)
     radius = np.loadtxt('clusters.tmp')[:,1]
 
-    print '\nAdd %s-body clusters:' %(cluster_order)
+    print('\nAdd %s-body clusters:' %(cluster_order))
     for i in cluster.generate_candidates(cluster_order):
         model = initial_model + i
-        print model
+        print(model)
         model_size.append(len(model))
         cutoff.append(radius[model][-1])
 
@@ -62,11 +62,11 @@ X = np.loadtxt('allcorr.out')
 y = np.loadtxt('all%s.out' %(args.property))
 cluster = Cluster()
 
-datafile = file('score.dat','w')
+datafile = open('score.dat','w')
 datafile.write('#Cluster_diameter\t%s\n' %(args.score))
 
 #use a simple model as the initial model
-simple_model = range(cluster.get_exclude_cluster_number(2)) #a simple model having only null and point clusters
+simple_model = list(range(cluster.get_exclude_cluster_number(2))) #a simple model having only null and point clusters
 eci = np.linalg.lstsq(X[:,simple_model],y,rcond=None)[0]
 if args.score == "BIC":
     initial_score = BIC(X[:,simple_model],eci,y)

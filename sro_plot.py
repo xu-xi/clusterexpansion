@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import numpy,argparse,subprocess,os,sys
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -13,7 +13,7 @@ def Main(Arglist):
     parser.add_argument('-f',default='mc.out',dest='mcfile',help="The Monte Carlo data file ")
     parser.add_argument('-x',type=float,required=True,dest='concentration',help="The concentration of component atom")
     parser.add_argument('-o',type=int,dest='order',default=2,help="The order of clusters to plot")
-    #parser.add_argument('-t',type=str,dest='title',default='',help="The title of the plot")
+    parser.add_argument('-t',type=str,dest='title',default='',help="The title of the plot")
     parser.add_argument('-T',type=int,dest='temp0',help="The initial temperature of the plot")
     #parser.add_argument('--ft',type=str,dest='filetype',default='png',help="Any filetype supported by Matplotlib")
     parser.add_argument('-n',type=int,dest='clus_number',help="The number of cluster to plot")
@@ -68,7 +68,7 @@ def Main(Arglist):
     #plot cluster correlation functions from MC simulations
     clus_include,clus_exclude=read_clusters(args.order)
     if clus_include > 10:
-        print 'WARNING: too many clusters to display!'
+        print('WARNING: too many clusters to display!')
         #clus_include=10
     if args.clus_number!=None and args.clus_number < clus_include:
         clus_include=args.clus_number
@@ -93,7 +93,7 @@ def Main(Arglist):
         plt.plot(mc_temps,[random_corr]*len(mc_temps),linestyle='dashed',c='k',label='random')
 
     #details of the plot
-    #plt.title(args.title)
+    plt.title(args.title)
     plt.xlabel('Temperature/K')
     if args.order==1:
         plt.ylabel('Concentration x')

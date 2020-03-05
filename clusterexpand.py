@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import argparse,sys,os,shutil,subprocess,random,copy,socket,ase.io,time
 from celib import initstr,occupy,ce_energy
 import numpy as np
@@ -28,7 +28,7 @@ def vasp_no_error(index):
 def generate_wien2k_machines(processor_number=4):
     'generate .machines file for wien2k'
     hostname=socket.gethostname()
-    para_file=file('.machines','w')
+    para_file=open('.machines','w')
     para_file.write('#\nlapw0:')
     for i in range(processor_number):
         para_file.write(hostname+' ')
@@ -70,7 +70,7 @@ def random_structure_generator(lattice,supercell,index,struct_number,mbj=False):
             if 1.0 - max(ip) > 0.01:
                 break
             elif time.clock() - t0 > 100:
-                print 'Could not find new structure. Please enlarge the supercell.';sys.exit(1)
+                raise RuntimeError('Could not find new structure. Please enlarge the supercell.')
         else:
             break
                 
@@ -144,7 +144,7 @@ An example of supercell.in (2*2*2 simple supecell):
                 struct_number += 1
             os.chdir(wd)
        
-    celog = file('ce.log','w')
+    celog = open('ce.log','w')
 
     if struct_number != 0:
         celog.write(str(struct_number)+' structures have already been calulated in current directory.\n')

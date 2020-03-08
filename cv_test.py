@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import numpy as np
 from cluster import Cluster
 from celib import calc_cv,read_cluster_function,read_quantity

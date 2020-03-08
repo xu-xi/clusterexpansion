@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
-import argparse,sys,os,shutil,subprocess,random,copy,socket,ase.io,time
+#!/usr/bin/env python
+import argparse,sys,os,shutil,subprocess,random,copy,socket,time
 from celib import initstr,occupy,ce_energy
 import numpy as np
 
@@ -37,6 +37,7 @@ def generate_wien2k_machines(processor_number=4):
     para_file.write('\n\ngranularity:1\nextrafine:1')
     para_file.close()
 
+'''
 def run_wien2k_scf():
     'call WIEN2k to do scf calculation and one-shot mBJ'
     os.mkdir('scf')
@@ -54,7 +55,7 @@ def run_wien2k_scf():
     shutil.copy('./.machines','./mbj')
     os.chdir('./mbj')
     subprocess.check_call('w2k_tbbj -p',shell=True)
-
+'''
 
 def random_structure_generator(lattice,supercell,index,struct_number,mbj=False):
     'generate structures randomly and call VASP to calculate its energy. The inner product of two cluster functions is used to judge their structural similarity'
@@ -179,8 +180,9 @@ An example of supercell.in (2*2*2 simple supecell):
         os.chdir(wd)
         cv = float(subprocess.check_output("clusterexpand -e -cv %s | tail -1" %(args.property),shell=True))
         energy_list = np.loadtxt('allenergy.out',ndmin=1)
-        celog.write(subprocess.check_output("date"))
-        celog.write('Cycle %s CV: %s\n' % (struct_number,cv))
+        localtime = time.asctime(time.localtime(time.time()))
+        celog.write(localtime)
+        celog.write('\nCycle %s CV: %s\n' % (struct_number,cv))
         celog.flush()
         if os.path.isfile('stop') or cv < args.cv:
             celog.close()

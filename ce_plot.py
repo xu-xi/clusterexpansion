@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import os,subprocess,numpy,argparse,sys,subprocess,math
 import matplotlib.pyplot as plt
 from celib import read_clusters,data_io

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import numpy,argparse,subprocess,os,sys
 import matplotlib as mpl
 import matplotlib.pyplot as plt
